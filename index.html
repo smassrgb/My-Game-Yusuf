@@ -237,7 +237,7 @@
         #dpad-right { top: 59px; right: 0; }
 
         .mobile-btn {
-            position: absolute; width: 80px; height: 80px; background: rgba(15, 23, 42, 0.92);
+            position: absolute; width: 75px; height: 75px; background: rgba(15, 23, 42, 0.92);
             border: 2.5px solid #f1c40f; border-radius: 50%; color: #fff;
             font-weight: 800; display: none; justify-content: center; align-items: center;
             pointer-events: auto; font-size: 0.85rem; backdrop-filter: blur(8px);
@@ -245,8 +245,8 @@
             touch-action: none; transition: transform 0.1s ease;
         }
         .mobile-btn:active { transform: scale(0.9); background: #f1c40f; color: #000; }
-        #btn-action-touch { bottom: 40px; right: 30px; background: rgba(39, 174, 96, 0.95); border-color: #2ecc71; }
-        #btn-jump { bottom: 40px; right: 125px; }
+        #btn-action-touch { bottom: 35px; right: 25px; background: rgba(39, 174, 96, 0.95); border-color: #2ecc71; }
+        #btn-jump { bottom: 35px; right: 115px; }
 
         .inventory-slot {
             width: 46px; height: 46px; border-radius: 10px; background: rgba(30, 41, 59, 0.8);
@@ -1659,18 +1659,18 @@
             const btnJump = document.getElementById('btn-jump');
 
             const handleBtnAction = (e) => {
-                e.preventDefault();
+                if (e.cancelable) e.preventDefault();
                 e.stopPropagation();
                 interactWithObject();
             };
 
             const handleBtnJump = (e) => {
-                e.preventDefault();
+                if (e.cancelable) e.preventDefault();
                 e.stopPropagation();
                 doJump();
             };
 
-            // Menggunakan pointerdown SAHAJA bagi mengelakkan pertindihan acara touchstart
+            // Guna 'pointerdown' untuk pemicu satu sentuhan sahaja tanpa pertindihan
             btnAction.addEventListener('pointerdown', handleBtnAction);
             btnJump.addEventListener('pointerdown', handleBtnJump);
 
@@ -1697,14 +1697,14 @@
                 if (!btn) return;
 
                 const startPress = (e) => {
-                    e.preventDefault();
+                    if (e.cancelable) e.preventDefault();
                     e.stopPropagation();
                     btnInfo.action(true);
                     btn.classList.add('active');
                 };
 
                 const endPress = (e) => {
-                    e.preventDefault();
+                    if (e.cancelable) e.preventDefault();
                     e.stopPropagation();
                     btnInfo.action(false);
                     btn.classList.remove('active');
