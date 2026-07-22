@@ -2,362 +2,527 @@
 <html lang="ms">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kembara Nabi Yusuf A.S.</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Kembara Nabi Yusuf A.S. - 3D FPS Game</title>
     <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #000;
-            color: #fff;
+        * { box-sizing: border-box; user-select: none; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #000; color: #fff; }
+
+        #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+
+        /* Crosshair FPS */
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; width: 10px; height: 10px;
+            background: rgba(255, 255, 255, 0.7); border-radius: 50%;
+            transform: translate(-50%, -50%); pointer-events: none; z-index: 5;
+            border: 2px solid rgba(0,0,0,0.5);
         }
 
-        #canvas-container {
-            width: 100vw;
-            height: 100vh;
+        /* HUD Bar Top */
+        #hud {
+            position: absolute; top: 15px; left: 15px; right: 15px;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 6; pointer-events: none;
         }
 
-        /* UI Overlays */
-        #start-screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.8));
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 10;
-            text-align: center;
+        .hud-card {
+            background: rgba(0, 0, 0, 0.65); border: 2px solid #f1c40f;
+            padding: 10px 20px; border-radius: 12px; backdrop-filter: blur(5px);
+            pointer-events: auto;
         }
 
-        h1 {
-            font-size: 3rem;
-            margin-bottom: 10px;
-            color: #f1c40f;
-            text-shadow: 0 0 10px rgba(241, 196, 15, 0.5);
+        #passport-btn, #settings-btn {
+            background: #e67e22; border: none; color: #fff; padding: 8px 15px;
+            border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        #passport-btn:hover, #settings-btn:hover { background: #d35400; }
+
+        /* Modals / Windows */
+        .modal {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(15, 15, 15, 0.95); border: 2px solid #f1c40f;
+            border-radius: 15px; padding: 25px; width: 90%; max-width: 550px;
+            z-index: 20; display: none; box-shadow: 0 0 25px rgba(241, 196, 15, 0.3);
         }
 
-        p {
-            font-size: 1.2rem;
-            max-width: 600px;
-            margin-bottom: 30px;
-            line-height: 1.6;
+        .modal h2 { color: #f1c40f; margin-top: 0; text-align: center; }
+        .modal p { font-size: 0.95rem; line-height: 1.5; color: #ddd; }
+
+        input[type="text"], textarea {
+            width: 100%; padding: 10px; margin: 10px 0; border-radius: 8px;
+            border: 1px solid #f1c40f; background: #222; color: #fff; font-size: 1rem;
         }
 
-        .btn {
-            padding: 15px 40px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: #fff;
-            background: #e67e22;
-            border: none;
-            border-radius: 30px;
-            cursor: pointer;
-            box-shadow: 0 5px 15px rgba(230, 126, 34, 0.4);
-            transition: all 0.3s ease;
+        .btn-action {
+            width: 100%; padding: 12px; background: #27ae60; border: none;
+            color: #fff; font-weight: bold; font-size: 1rem; border-radius: 8px;
+            cursor: pointer; margin-top: 10px;
         }
+        .btn-action:hover { background: #219150; }
 
-        .btn:hover {
-            background: #d35400;
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(230, 126, 34, 0.6);
+        /* Mobile Controls */
+        #mobile-controls {
+            position: absolute; bottom: 20px; left: 0; right: 0; height: 180px;
+            z-index: 10; pointer-events: none; display: none;
         }
+        #joystick-zone {
+            position: absolute; bottom: 20px; left: 20px; width: 120px; height: 120px;
+            background: rgba(255, 255, 255, 0.15); border-radius: 50%;
+            pointer-events: auto; border: 2px solid rgba(255,255,255,0.3);
+        }
+        #joystick-knob {
+            position: absolute; top: 35px; left: 35px; width: 50px; height: 50px;
+            background: #f1c40f; border-radius: 50%; opacity: 0.8;
+        }
+        .mobile-btn {
+            position: absolute; width: 65px; height: 65px; background: rgba(0,0,0,0.6);
+            border: 2px solid #f1c40f; border-radius: 50%; color: #fff;
+            font-weight: bold; display: flex; justify-content: center; align-items: center;
+            pointer-events: auto; font-size: 0.8rem;
+        }
+        #btn-jump { bottom: 30px; right: 20px; }
+        #btn-run { bottom: 30px; right: 95px; }
 
-        /* Rewind Overlay Effect */
-        #rewind-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 5;
-            opacity: 0;
-            transition: opacity 0.5s ease;
-            background: radial-gradient(circle, rgba(241,196,15,0.2) 0%, rgba(0,0,0,0.8) 100%);
-        }
+        /* Settings Screen */
+        .setting-row { margin: 15px 0; display: flex; justify-content: space-between; align-items: center; }
+        .setting-row label { font-size: 0.95rem; }
+        .setting-row input[type="range"] { width: 50%; }
 
-        #clock-widget {
-            font-size: 5rem;
-            font-weight: bold;
-            color: #f39c12;
-            text-shadow: 0 0 20px #f39c12;
-            animation: spin 1s linear infinite reverse;
+        /* Start Screen Overlay */
+        #start-overlay {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            background: radial-gradient(circle, #2c3e50 0%, #000 100%);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 30; text-align: center; padding: 20px;
         }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* HUD & Info Box Stesen */
-        #station-ui {
-            position: absolute;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80%;
-            max-width: 700px;
-            background: rgba(0, 0, 0, 0.85);
-            border: 2px solid #f1c40f;
-            border-radius: 15px;
-            padding: 20px;
-            display: none;
-            box-shadow: 0 0 20px rgba(0,0,0,0.8);
-            z-index: 2;
-        }
-
-        #station-title {
-            color: #f1c40f;
-            margin-top: 0;
-        }
-
-        .nav-btns {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 15px;
-        }
-
-        .btn-small {
-            padding: 10px 25px;
-            font-size: 1rem;
-            background: #2980b9;
-            border: none;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .btn-small:hover {
-            background: #3498db;
-        }
+        #start-overlay h1 { font-size: 2.8rem; color: #f1c40f; margin-bottom: 10px; }
     </style>
 
-    <!-- Three.js Library & GLTFLoader -->
+    <!-- Three.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
 </head>
 <body>
 
     <div id="canvas-container"></div>
+    <div id="crosshair"></div>
 
-    <!-- Skrin Mula -->
-    <div id="start-screen">
-        <h1>Kembara Nabi Yusuf A.S.</h1>
-        <p>Sertai kembara interaktif menyelusuri iktibar dan sejarah perjalanan hidup Nabi Yusuf A.S. dari perigi hingga menjadi wazir Mesir.</p>
-        <button class="btn" id="start-btn">MULA KEMBARA</button>
-    </div>
-
-    <!-- Animasi Rewind Jam -->
-    <div id="rewind-overlay">
-        <div id="clock-widget">⏳</div>
-    </div>
-
-    <!-- UI Stesen -->
-    <div id="station-ui">
-        <h2 id="station-title">Stesen 1: Perigi</h2>
-        <p id="station-desc">Penerangan stesen akan dipaparkan di sini...</p>
-        <div class="nav-btns">
-            <button class="btn-small" id="prev-btn" onclick="navigateStation(-1)">Sebelumnya</button>
-            <button class="btn-small" id="next-btn" onclick="navigateStation(1)">Seterusnya</button>
+    <!-- HUD -->
+    <div id="hud">
+        <div class="hud-card">
+            <span id="level-title" style="font-weight: bold; color: #f1c40f;">Level 1: Stesen Visi (Mimpi)</span>
+        </div>
+        <div>
+            <button id="passport-btn" onclick="togglePassport()">📘 Pasport Misi</button>
+            <button id="settings-btn" onclick="toggleSettings()">⚙️ Tetapan</button>
         </div>
     </div>
 
-    <!-- Audio Muzik Latar -->
-    <audio id="bg-music" loop>
+    <!-- Skrin Mula -->
+    <div id="start-overlay">
+        <h1>Kembara Nabi Yusuf A.S.</h1>
+        <p>Terokai kisah pengajaran Nabi Yusuf A.S. dalam sudut pandang pertama (FPS).</p>
+        <button class="btn-action" style="max-width: 250px;" onclick="startGame()">MULA PERMAINAN</button>
+    </div>
+
+    <!-- Modal Task Stesen -->
+    <div id="task-modal" class="modal">
+        <h2 id="modal-station-title">Misi Stesen</h2>
+        <p id="modal-station-desc">Penerangan Misi...</p>
+        <div id="modal-input-container">
+            <input type="text" id="task-answer" placeholder="Masukkan jawapan anda di sini...">
+        </div>
+        <button class="btn-action" onclick="submitTask()">Hantar / Selesaikan Misi</button>
+    </div>
+
+    <!-- Modal Pasport Misi -->
+    <div id="passport-modal" class="modal">
+        <h2>📘 Pasport Kembara</h2>
+        <div id="passport-list" style="max-height: 250px; overflow-y: auto;"></div>
+        <button class="btn-action" style="background:#c0392b;" onclick="togglePassport()">Tutup</button>
+    </div>
+
+    <!-- Modal Tetapan -->
+    <div id="settings-modal" class="modal">
+        <h2>⚙️ Tetapan Permainan</h2>
+        <div class="setting-row">
+            <label>Lantangan Muzik Latar (BGM):</label>
+            <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.5" onchange="updateAudioVolume()">
+        </div>
+        <div class="setting-row">
+            <label>Sensitiviti Kamera:</label>
+            <input type="range" id="sens-slider" min="0.5" max="3" step="0.1" value="1" onchange="updateSensitivity()">
+        </div>
+        <button class="btn-action" style="background:#2980b9;" onclick="toggleSettings()">Simpan & Tutup</button>
+    </div>
+
+    <!-- Kawalan Mobile -->
+    <div id="mobile-controls">
+        <div id="joystick-zone"><div id="joystick-knob"></div></div>
+        <div id="btn-jump" class="mobile-btn">LOMPAT</div>
+        <div id="btn-run" class="mobile-btn">LARI</div>
+    </div>
+
+    <!-- Audio Background Music MP3 -->
+    <audio id="bg-music" loop preload="auto">
         <source src="https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/background%20music.mp3" type="audio/mp3">
     </audio>
 
     <script>
         const BASE_URL = 'https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/';
 
-        // Data Stesen & Lokasi Kamera
-        const stations = [
-            {
-                id: 0,
-                title: "Stesen 1: Dibuang ke Dalam Perigi",
-                desc: "Nabi Yusuf A.S. telah dicampakkan ke dalam perigi tua di padang pasir oleh saudara-saudaranya akibat sifat dengki. Namun, Allah SWT sentiasa memelihara baginda.",
-                camPos: { x: 0, y: 6, z: 18 },
-                targetPos: { x: 0, y: 0, z: 0 }
-            },
+        // Data Stesen & Misi
+        const levels = [
             {
                 id: 1,
-                title: "Stesen 2: Istana Al-Aziz (Mesir)",
-                desc: "Baginda diselamatkan oleh kafilah dagang dan dijual di Mesir. Baginda membesar di istana Al-Aziz dengan perwatakan yang mulia dan paras rupa yang tampan.",
-                camPos: { x: 60, y: 10, z: 20 },
-                targetPos: { x: 60, y: 2, z: 0 }
+                name: "Stesen 1: Visi & Mimpi",
+                env: "space",
+                desc: "Anda berada dalam suasana alam mimpi Nabi Yusuf A.S. Lihat cakerawala di sekeliling. Berapakah jumlah bintang yang dilihat oleh Nabi Yusuf A.S. dalam mimpinya?",
+                answer: "11",
+                unlocked: true,
+                completed: false,
+                pos: { x: 0, z: 0 }
             },
             {
                 id: 2,
-                title: "Stesen 3: Penjara & Ujian Kedukaan",
-                desc: "Nabi Yusuf A.S. memilih untuk dipenjarakan demi mempertahankan ketakwaan dan kesucian diri daripada fitnah.",
-                camPos: { x: 120, y: 8, z: 18 },
-                targetPos: { x: 120, y: 1, z: 0 }
+                name: "Stesen 2: Perigi (Escape Well)",
+                desc: "Nabi Yusuf dicampakkan ke dalam perigi. Untuk keluar, taipkan kata kunci takwa berikut: 'Sabar'",
+                answer: "Sabar",
+                unlocked: false,
+                completed: false,
+                pos: { x: 80, z: 0 }
             },
             {
                 id: 3,
-                title: "Stesen 4: Pentadbir Gudang & Musim Kemarau",
-                desc: "Selepas mentafsirkan mimpi Raja, Nabi Yusuf dilantik menjadi menteri kewangan/pentadbir gudang makanan untuk menyelamatkan Mesir dari kemarau 7 tahun.",
-                camPos: { x: 180, y: 10, z: 22 },
-                targetPos: { x: 180, y: 2, z: 0 }
+                name: "Stesen 3: Kafilah Pedagang",
+                desc: "Kafilah dagang telah menyelamatkan baginda. Nyatakan nilai sifat utama yang perlu ada dalam urus niaga bernilai adil: 'Jujur'",
+                answer: "Jujur",
+                unlocked: false,
+                completed: false,
+                pos: { x: 160, z: 0 }
+            },
+            {
+                id: 4,
+                name: "Stesen 4: Tamadun Mesir",
+                desc: "Di Istana Mesir, Nabi Yusuf membesar dengan ilmu. Nyatakan nama negeri tempat baginda dibesarkan: 'Mesir'",
+                answer: "Mesir",
+                unlocked: false,
+                completed: false,
+                pos: { x: 240, z: 0 }
+            },
+            {
+                id: 5,
+                name: "Stesen 5: Gudang Gandum",
+                desc: "Sebagai bendahari Mesir, berapa tahunkah persediaan simpanan gandum yang perlu disimpan mengikut tafsiran mimpi Raja? (Nombor)",
+                answer: "7",
+                unlocked: false,
+                completed: false,
+                pos: { x: 320, z: 0 }
+            },
+            {
+                id: 6,
+                name: "Stesen 6: Legasi & Refleksi",
+                desc: "Tuliskan 1 nilai kepimpinan utama Nabi Yusuf A.S. yang ingin anda amalkan (cth: Maaf / Pemaaf / Telus / Amanah):",
+                answer: "ANY",
+                unlocked: false,
+                completed: false,
+                pos: { x: 400, z: 0 }
             }
         ];
 
-        let currentStationIndex = 0;
+        let currentLevelIndex = 0;
         let scene, camera, renderer, gltfLoader;
-        let skyModel;
+        let sensitivity = 1.0;
+
+        // Player FPS Physics Vars
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+        let isRunning = false, canJump = false;
+        let velocity = new THREE.Vector3();
+        let direction = new THREE.Vector3();
+        let prevTime = performance.now();
+
+        // Procedural Audio Synthesizer (Lagu Latar Sintetik mengikut Suasana)
+        let audioCtx, synthOsc, synthGain;
+
+        function initSynthAudio() {
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                synthOsc = audioCtx.createOscillator();
+                synthGain = audioCtx.createGain();
+                synthOsc.type = 'sine';
+                synthOsc.frequency.setValueAtTime(110, audioCtx.currentTime); // Low ambient hum
+                synthGain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                synthOsc.connect(synthGain);
+                synthGain.connect(audioCtx.destination);
+                synthOsc.start();
+            } catch(e) { console.log("Audio Synth tidak disokong."); }
+        }
+
+        function updateSynthEnvironmentTone(levelIdx) {
+            if (!audioCtx) return;
+            // Ubah frekuensi dan bunyi mengikut persekitaran stesen
+            const freqs = [110, 87, 130, 164, 146, 220]; 
+            synthOsc.frequency.exponentialRampToValueAtTime(freqs[levelIdx] || 110, audioCtx.currentTime + 2);
+        }
 
         function init() {
             const container = document.getElementById('canvas-container');
 
-            // Scene setup
             scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x050508);
 
-            // Camera setup
-            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
-            camera.position.set(0, 15, 40);
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 2, 5);
 
-            // Renderer
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.shadowMap.enabled = true;
             container.appendChild(renderer.domElement);
 
-            // Lighting
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
             scene.add(ambientLight);
 
-            const sunLight = new THREE.DirectionalLight(0xfffaed, 1.3);
-            sunLight.position.set(100, 150, 50);
-            sunLight.castShadow = true;
-            scene.add(sunLight);
+            const dirLight = new THREE.DirectionalLight(0xfffaed, 1.0);
+            dirLight.position.set(50, 100, 50);
+            scene.add(dirLight);
 
             gltfLoader = new THREE.GLTFLoader();
 
-            // Memuat naik Environment Utama & Asset Stesen
-            buildEnvironment();
+            setupEnvironmentAndAssets();
+            setupControls();
+            detectMobile();
 
-            // Event Listeners
             window.addEventListener('resize', onWindowResize);
-            document.getElementById('start-btn').addEventListener('click', startRewindTime);
         }
 
-        // Fungsi Memuat Naik Model GLB General
-        function loadModel(fileName, position, scale = {x:1, y:1, z:1}, rotation = {x:0, y:0, z:0}, callback = null) {
+        function loadGLB(fileName, pos, scale = {x:1, y:1, z:1}, rot = {x:0, y:0, z:0}) {
             const url = BASE_URL + encodeURIComponent(fileName) + '.glb';
             gltfLoader.load(url, (gltf) => {
                 const model = gltf.scene;
-                model.position.set(position.x, position.y, position.z);
+                model.position.set(pos.x, pos.y, pos.z);
                 model.scale.set(scale.x, scale.y, scale.z);
-                model.rotation.set(rotation.x, rotation.y, rotation.z);
-                
-                model.traverse((node) => {
-                    if (node.isMesh) {
-                        node.castShadow = true;
-                        node.receiveShadow = true;
-                    }
-                });
-                
+                model.rotation.set(rot.x, rot.y, rot.z);
                 scene.add(model);
-                if(callback) callback(model);
-            }, undefined, (error) => {
-                console.warn(`Fail ${fileName}.glb gagal dimuat naik.`, error);
-            });
+            }, undefined, (err) => console.warn("Asset tidak dapat dimuat naik: " + fileName));
         }
 
-        function buildEnvironment() {
-            // 1. ENVIRONMENT: Terrain / Padang Pasir (red_sculpted_plains_-_terrain)
-            loadModel('red_sculpted_plains_-_terrain', { x: 90, y: -2, z: 0 }, { x: 10, y: 10, z: 10 });
+        function setupEnvironmentAndAssets() {
+            // Environment Utama: Red Sculpted Plains & Space Skybox
+            loadGLB('red_sculpted_plains_-_terrain', { x: 200, y: -4, z: 0 }, { x: 15, y: 15, z: 15 });
+            loadGLB('need_some_space', { x: 200, y: 0, z: 0 }, { x: 60, y: 60, z: 60 });
 
-            // 2. ENVIRONMENT: Skybox / Space Sky (need_some_space)
-            loadModel('need_some_space', { x: 90, y: 0, z: 0 }, { x: 50, y: 50, z: 50 }, { x: 0, y: 0, z: 0 }, (m) => {
-                skyModel = m; // Disimpan untuk animasi putaran langit jika perlu
-            });
+            // Assets Mengikut Stesen
 
-            // --- STESEN 1: PERIGI & PADANG PASIR (X: 0) ---
-            loadModel('Well by Quaternius - QlqncKYxXb', { x: 0, y: 0, z: 0 }, { x: 2, y: 2, z: 2 });
-            loadModel('Camel by Poly by Google - cyuwV4fg0B1', { x: -7, y: 0, z: 4 }, { x: 1.5, y: 1.5, z: 1.5 }, { x: 0, y: 0.8, z: 0 });
-            loadModel('Palm tree by Poly by Google - 1l79utpMAy0', { x: 6, y: 0, z: -5 }, { x: 2.5, y: 2.5, z: 2.5 });
-            loadModel('Cactus by Poly by Google - 1_3Ur2-LAs8', { x: -5, y: 0, z: -4 }, { x: 1.5, y: 1.5, z: 1.5 });
-
-            // --- STESEN 2: ISTANA AL-AZIZ (X: 60) ---
-            loadModel('Palace by Poly by Google - f5wb0x6Qk3j', { x: 60, y: 0, z: -12 }, { x: 3, y: 3, z: 3 });
-            loadModel('royal_throne_by_modenese', { x: 60, y: 0, z: 0 }, { x: 1.5, y: 1.5, z: 1.5 });
-            loadModel('Pillar by Kay Lousberg - 1nt8n3rVKU', { x: 53, y: 0, z: 6 }, { x: 2, y: 2, z: 2 });
-            loadModel('Pillar by Kay Lousberg - 1nt8n3rVKU', { x: 67, y: 0, z: 6 }, { x: 2, y: 2, z: 2 });
-            loadModel('Chest by Quaternius - eEcIqgJzJ1', { x: 56, y: 0, z: 2 }, { x: 1.2, y: 1.2, z: 1.2 });
-
-            // --- STESEN 3: PENJARA (X: 120) ---
-            loadModel('Jail by Poly by Google - bF8mr05ofaY', { x: 120, y: 0, z: 0 }, { x: 2.5, y: 2.5, z: 2.5 });
-            loadModel('Torch by Quaternius - Gq38E7hFZw', { x: 117, y: 1.5, z: 3 }, { x: 1, y: 1, z: 1 });
-            loadModel('Torch by Quaternius - Gq38E7hFZw', { x: 123, y: 1.5, z: 3 }, { x: 1, y: 1, z: 1 });
-
-            // --- STESEN 4: GUDANG & PERTANIAN (X: 180) ---
-            loadModel('Storage House by Quaternius - d2ZQWcuhwR', { x: 180, y: 0, z: -6 }, { x: 2.5, y: 2.5, z: 2.5 });
-            loadModel('Field of wheat by Poly by Google - cNX9BRNG6ep', { x: 170, y: 0, z: 5 }, { x: 2, y: 2, z: 2 });
-            loadModel('Crate by Quaternius - 3OEFd1AWfa', { x: 186, y: 0, z: 3 }, { x: 1.5, y: 1.5, z: 1.5 });
-            loadModel('Cow by Poly by Google - 4w-_VbcSECP', { x: 191, y: 0, z: 2 }, { x: 1.5, y: 1.5, z: 1.5 });
-
-            // Hiasan Cakerawala Lengkap
-            loadModel('Sun by Zoe XR - 7diieNtphvD', { x: 90, y: 80, z: -120 }, { x: 6, y: 6, z: 6 });
-            loadModel('Moon by Zoe XR - 10VNaCg1jYM', { x: -40, y: 70, z: -100 }, { x: 5, y: 5, z: 5 });
-            loadModel('Star by Poly by Google - 9NXf-SDxJny', { x: 30, y: 60, z: -90 }, { x: 2, y: 2, z: 2 });
-        }
-
-        // Kesan Masa Berputar (Time Rewind Animation)
-        function startRewindTime() {
-            document.getElementById('start-screen').style.display = 'none';
-            
-            // Mainkan audio latar
-            const bgMusic = document.getElementById('bg-music');
-            bgMusic.play().catch(e => console.log("Auto-play disekat oleh penyemak imbas."));
-
-            const overlay = document.getElementById('rewind-overlay');
-            overlay.style.opacity = '1';
-
-            // Animasi pergerakan kamera laju secara membulat untuk kesan rewind masa
-            new TWEEN.Tween(camera.position)
-                .to({ x: 0, y: 25, z: 45 }, 2500)
-                .easing(TWEEN.Easing.Quadratic.InOut)
-                .onComplete(() => {
-                    overlay.style.opacity = '0';
-                    moveToStation(0);
-                    document.getElementById('station-ui').style.display = 'block';
-                })
-                .start();
-        }
-
-        // Pergerakan Kamera ke Stesen
-        function moveToStation(index) {
-            const st = stations[index];
-            currentStationIndex = index;
-
-            // Kemaskini UI
-            document.getElementById('station-title').innerText = st.title;
-            document.getElementById('station-desc').innerText = st.desc;
-
-            // Transisi Kamera Smooth menggunakan TWEEN
-            new TWEEN.Tween(camera.position)
-                .to(st.camPos, 2000)
-                .easing(TWEEN.Easing.Cubic.Out)
-                .start();
-        }
-
-        function navigateStation(direction) {
-            let newIndex = currentStationIndex + direction;
-            if (newIndex >= 0 && newIndex < stations.length) {
-                moveToStation(newIndex);
+            // --- Level 1: Mimpi (Cakerawala) ---
+            loadGLB('Sun by Zoe XR - 7diieNtphvD', { x: 0, y: 8, z: -15 }, { x: 3, y: 3, z: 3 });
+            loadGLB('Moon by Zoe XR - 10VNaCg1jYM', { x: -8, y: 8, z: -15 }, { x: 2.5, y: 2.5, z: 2.5 });
+            for(let i=0; i<11; i++) {
+                let angle = (i / 11) * Math.PI * 2;
+                loadGLB('Star by Poly by Google - 9NXf-SDxJny', { x: Math.cos(angle)*10, y: 5 + Math.sin(i)*2, z: -15 + Math.sin(angle)*5 }, { x: 0.8, y: 0.8, z: 0.8 });
             }
+
+            // --- Level 2: Perigi ---
+            loadGLB('Well by Quaternius - QlqncKYxXb', { x: 80, y: 0, z: 0 }, { x: 2.5, y: 2.5, z: 2.5 });
+            loadGLB('Camel by Poly by Google - cyuwV4fg0B1', { x: 73, y: 0, z: 4 }, { x: 1.5, y: 1.5, z: 1.5 });
+            loadGLB('Palm tree by Poly by Google - 1l79utpMAy0', { x: 86, y: 0, z: -5 }, { x: 2, y: 2, z: 2 });
+
+            // --- Level 3: Kafilah Pedagang ---
+            loadGLB('Camel by Poly by Google - cyuwV4fg0B1', { x: 160, y: 0, z: -3 }, { x: 1.5, y: 1.5, z: 1.5 });
+            loadGLB('Bag Open by Quaternius - rJuZexcuhU', { x: 158, y: 0, z: 2 }, { x: 1.2, y: 1.2, z: 1.2 });
+            loadGLB('Chalice by Quaternius - VZencXtC2I', { x: 162, y: 0, z: 2 }, { x: 1, y: 1, z: 1 });
+            loadGLB('Chest by Quaternius - eEcIqgJzJ1', { x: 164, y: 0, z: 0 }, { x: 1.3, y: 1.3, z: 1.3 });
+
+            // --- Level 4: Istana Mesir ---
+            loadGLB('Palace by Poly by Google - f5wb0x6Qk3j', { x: 240, y: 0, z: -10 }, { x: 3, y: 3, z: 3 });
+            loadGLB('royal_throne_by_modenese', { x: 240, y: 0, z: 0 }, { x: 1.5, y: 1.5, z: 1.5 });
+            loadGLB('Pillar by Kay Lousberg - 1nt8n3rVKU', { x: 233, y: 0, z: 4 }, { x: 2, y: 2, z: 2 });
+            loadGLB('Pillar by Kay Lousberg - 1nt8n3rVKU', { x: 247, y: 0, z: 4 }, { x: 2, y: 2, z: 2 });
+
+            // --- Level 5: Gudang Gandum ---
+            loadGLB('Storage House by Quaternius - d2ZQWcuhwR', { x: 320, y: 0, z: -6 }, { x: 2.5, y: 2.5, z: 2.5 });
+            loadGLB('Field of wheat by Poly by Google - cNX9BRNG6ep', { x: 310, y: 0, z: 4 }, { x: 2, y: 2, z: 2 });
+            loadGLB('Crate by Quaternius - 3OEFd1AWfa', { x: 325, y: 0, z: 2 }, { x: 1.5, y: 1.5, z: 1.5 });
+            loadGLB('Cow by Poly by Google - 4w-_VbcSECP', { x: 328, y: 0, z: -2 }, { x: 1.5, y: 1.5, z: 1.5 });
+
+            // --- Level 6: Legasi & Refleksi ---
+            loadGLB('Jail by Poly by Google - bF8mr05ofaY', { x: 400, y: 0, z: -5 }, { x: 2, y: 2, z: 2 });
+            loadGLB('Torch by Quaternius - Gq38E7hFZw', { x: 396, y: 1, z: 2 }, { x: 1, y: 1, z: 1 });
+            loadGLB('Torch by Quaternius - Gq38E7hFZw', { x: 404, y: 1, z: 2 }, { x: 1, y: 1, z: 1 });
+        }
+
+        // Setup Kawalan Keybaord & Mouse (PC FPS)
+        function setupControls() {
+            document.addEventListener('keydown', (e) => {
+                switch(e.code) {
+                    case 'KeyW': moveForward = true; break;
+                    case 'KeyS': moveBackward = true; break;
+                    case 'KeyA': moveLeft = true; break;
+                    case 'KeyD': moveRight = true; break;
+                    case 'ShiftLeft': isRunning = true; break;
+                    case 'Space': if(canJump) velocity.y += 12; canJump = false; break;
+                    case 'KeyE': checkStationInteraction(); break;
+                }
+            });
+
+            document.addEventListener('keyup', (e) => {
+                switch(e.code) {
+                    case 'KeyW': moveForward = false; break;
+                    case 'KeyS': moveBackward = false; break;
+                    case 'KeyA': moveLeft = false; break;
+                    case 'KeyD': moveRight = false; break;
+                    case 'ShiftLeft': isRunning = false; break;
+                }
+            });
+
+            // Pointer Lock untuk Kamera PC
+            document.body.addEventListener('click', () => {
+                if(document.getElementById('start-overlay').style.display === 'none' &&
+                   document.getElementById('task-modal').style.display !== 'block') {
+                    document.body.requestPointerLock();
+                }
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (document.pointerLockElement === document.body) {
+                    camera.rotation.y -= e.movementX * 0.002 * sensitivity;
+                    camera.rotation.x -= e.movementY * 0.002 * sensitivity;
+                    camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
+                }
+            });
+        }
+
+        function detectMobile() {
+            if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+                document.getElementById('mobile-controls').style.display = 'block';
+                setupJoystick();
+            }
+        }
+
+        function setupJoystick() {
+            const zone = document.getElementById('joystick-zone');
+            const knob = document.getElementById('joystick-knob');
+            let touchId = null;
+
+            zone.addEventListener('touchstart', (e) => {
+                touchId = e.changedTouches[0].identifier;
+            });
+
+            zone.addEventListener('touchmove', (e) => {
+                for (let touch of e.changedTouches) {
+                    if (touch.identifier === touchId) {
+                        const rect = zone.getBoundingClientRect();
+                        const x = touch.clientX - rect.left - 60;
+                        const y = touch.clientY - rect.top - 60;
+                        const dist = Math.min(Math.hypot(x, y), 40);
+                        const angle = Math.atan2(y, x);
+                        
+                        knob.style.transform = `translate(${Math.cos(angle)*dist}px, ${Math.sin(angle)*dist}px)`;
+                        
+                        moveForward = y < -10;
+                        moveBackward = y > 10;
+                        moveLeft = x < -10;
+                        moveRight = x > 10;
+                    }
+                }
+            });
+
+            const resetJoystick = () => {
+                knob.style.transform = `translate(0px, 0px)`;
+                moveForward = moveBackward = moveLeft = moveRight = false;
+            };
+
+            zone.addEventListener('touchend', resetJoystick);
+            document.getElementById('btn-jump').addEventListener('touchstart', () => { if(canJump) velocity.y += 12; canJump = false; });
+            document.getElementById('btn-run').addEventListener('touchstart', () => { isRunning = !isRunning; });
+        }
+
+        function startGame() {
+            document.getElementById('start-overlay').style.display = 'none';
+            
+            const audio = document.getElementById('bg-music');
+            audio.volume = 0.5;
+            audio.play().catch(e => console.log("Autoplay blocked"));
+
+            initSynthAudio();
+            openTaskModal();
+        }
+
+        function checkStationInteraction() {
+            const cur = levels[currentLevelIndex];
+            const dist = Math.hypot(camera.position.x - cur.pos.x, camera.position.z - cur.pos.z);
+            if(dist < 8) {
+                openTaskModal();
+            }
+        }
+
+        function openTaskModal() {
+            document.exitPointerLock();
+            const cur = levels[currentLevelIndex];
+            document.getElementById('modal-station-title').innerText = cur.name;
+            document.getElementById('modal-station-desc').innerText = cur.desc;
+            document.getElementById('task-answer').value = '';
+            document.getElementById('task-modal').style.display = 'block';
+        }
+
+        function submitTask() {
+            const cur = levels[currentLevelIndex];
+            const ans = document.getElementById('task-answer').value.trim();
+
+            if (cur.answer === "ANY" || ans.toLowerCase() === cur.answer.toLowerCase()) {
+                cur.completed = true;
+                alert("Tahniah! Misi " + cur.name + " Selesai!");
+                
+                document.getElementById('task-modal').style.display = 'none';
+
+                if (currentLevelIndex < levels.length - 1) {
+                    currentLevelIndex++;
+                    levels[currentLevelIndex].unlocked = true;
+                    
+                    // Pindahkan pemain ke lokasi stesen seterusnya secara automatik
+                    const nextPos = levels[currentLevelIndex].pos;
+                    camera.position.set(nextPos.x, 2, nextPos.z + 5);
+                    
+                    document.getElementById('level-title').innerText = levels[currentLevelIndex].name;
+                    updateSynthEnvironmentTone(currentLevelIndex);
+                } else {
+                    alert("🎉 TAHNIAH! Anda telah berjaya menyelesaikan keseluruhan Kembara Nabi Yusuf A.S.!");
+                }
+            } else {
+                alert("Jawapan kurang tepat. Sila cuba lagi berdasarkan petunjuk yang diberikan!");
+            }
+        }
+
+        function togglePassport() {
+            const modal = document.getElementById('passport-modal');
+            if (modal.style.display === 'block') {
+                modal.style.display = 'none';
+            } else {
+                let html = '';
+                levels.forEach(l => {
+                    html += `<div style="margin-bottom:10px; padding:8px; border-bottom:1px solid #444;">
+                        <strong>${l.name}</strong><br>
+                        Status: ${l.completed ? '<span style="color:#2ecc71;">✅ Selesai</span>' : (l.unlocked ? '<span style="color:#f1c40f;">🔓 Terbuka</span>' : '<span style="color:#e74c3c;">🔒 Terkunci</span>')}
+                    </div>`;
+                });
+                document.getElementById('passport-list').innerHTML = html;
+                modal.style.display = 'block';
+            }
+        }
+
+        function toggleSettings() {
+            const modal = document.getElementById('settings-modal');
+            modal.style.display = modal.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function updateAudioVolume() {
+            const vol = document.getElementById('volume-slider').value;
+            document.getElementById('bg-music').volume = vol;
+            if (synthGain) synthGain.gain.setValueAtTime(vol * 0.1, audioCtx.currentTime);
+        }
+
+        function updateSensitivity() {
+            sensitivity = parseFloat(document.getElementById('sens-slider').value);
         }
 
         function onWindowResize() {
@@ -366,24 +531,36 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        function animate(time) {
+        function animate() {
             requestAnimationFrame(animate);
-            TWEEN.update();
-            
-            // Animasi perlahan langit (Skybox rotation) jika ada
-            if(skyModel) {
-                skyModel.rotation.y += 0.0002;
+
+            const time = performance.now();
+            const delta = (time - prevTime) / 1000;
+
+            // Physics gravity & friction
+            velocity.x -= velocity.x * 10.0 * delta;
+            velocity.z -= velocity.z * 10.0 * delta;
+            velocity.y -= 9.8 * 3.0 * delta; // Physics Gravity
+
+            direction.z = Number(moveForward) - Number(moveBackward);
+            direction.x = Number(moveRight) - Number(moveLeft);
+            direction.normalize();
+
+            const speed = isRunning ? 25.0 : 12.0;
+            if (moveForward || moveBackward) velocity.z -= direction.z * speed * delta;
+            if (moveLeft || moveRight) velocity.x -= direction.x * speed * delta;
+
+            camera.translateX(-velocity.x * delta);
+            camera.translateZ(velocity.z * delta);
+            camera.position.y += velocity.y * delta;
+
+            if (camera.position.y < 2) {
+                velocity.y = 0;
+                camera.position.y = 2;
+                canJump = true;
             }
 
-            // Fokus kamera sentiasa ke stesen semasa
-            if (stations[currentStationIndex]) {
-                camera.lookAt(
-                    stations[currentStationIndex].targetPos.x,
-                    stations[currentStationIndex].targetPos.y,
-                    stations[currentStationIndex].targetPos.z
-                );
-            }
-
+            prevTime = time;
             renderer.render(scene, camera);
         }
 
