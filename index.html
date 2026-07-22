@@ -181,7 +181,7 @@
             box-shadow: 0 0 6px rgba(241, 196, 15, 0.9);
         }
 
-        /* Dynamic Touch Controls & LARGER JOYSTICK & BUTTONS FOR PHONE */
+        /* Dynamic Touch Controls */
         .touch-indicator {
             position: absolute;
             width: 60px;
@@ -196,30 +196,57 @@
             z-index: 99;
         }
 
-        #joystick-zone {
-            position: absolute; bottom: 40px; left: 40px; width: 210px; height: 210px;
-            background: rgba(255, 255, 255, 0.15); border-radius: 50%;
-            pointer-events: auto; border: 3px solid rgba(241, 196, 15, 0.6);
-            touch-action: none; display: none; z-index: 25;
-            box-shadow: 0 0 25px rgba(0,0,0,0.6);
-        }
-        #joystick-knob {
-            position: absolute; top: 65px; left: 65px; width: 80px; height: 80px;
-            background: #f1c40f; border-radius: 50%; opacity: 0.95; pointer-events: none;
-            box-shadow: 0 0 25px rgba(241, 196, 15, 1);
+        /* ARROW PAD / D-PAD CONTROLLER STYLE */
+        #dpad-zone {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            width: 170px;
+            height: 170px;
+            display: none;
+            z-index: 25;
+            touch-action: none;
         }
 
+        .dpad-btn {
+            position: absolute;
+            width: 52px;
+            height: 52px;
+            background: rgba(15, 23, 42, 0.85);
+            border: 2px solid #f1c40f;
+            border-radius: 12px;
+            color: #f1c40f;
+            font-size: 1.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            touch-action: none;
+            user-select: none;
+            transition: background 0.1s, transform 0.1s;
+        }
+        .dpad-btn:active, .dpad-btn.active {
+            background: #f1c40f;
+            color: #000;
+            transform: scale(0.92);
+        }
+
+        #dpad-up    { top: 0; left: 59px; }
+        #dpad-down  { bottom: 0; left: 59px; }
+        #dpad-left  { top: 59px; left: 0; }
+        #dpad-right { top: 59px; right: 0; }
+
         .mobile-btn {
-            position: absolute; width: 88px; height: 88px; background: rgba(15, 23, 42, 0.92);
+            position: absolute; width: 80px; height: 80px; background: rgba(15, 23, 42, 0.92);
             border: 2.5px solid #f1c40f; border-radius: 50%; color: #fff;
             font-weight: 800; display: none; justify-content: center; align-items: center;
-            pointer-events: auto; font-size: 0.95rem; backdrop-filter: blur(8px);
+            pointer-events: auto; font-size: 0.85rem; backdrop-filter: blur(8px);
             box-shadow: 0 8px 20px rgba(0,0,0,0.7); z-index: 25;
             touch-action: none; transition: transform 0.1s ease;
         }
         .mobile-btn:active { transform: scale(0.9); background: #f1c40f; color: #000; }
-        #btn-action-touch { bottom: 45px; right: 40px; background: rgba(39, 174, 96, 0.95); border-color: #2ecc71; }
-        #btn-jump { bottom: 45px; right: 145px; }
+        #btn-action-touch { bottom: 40px; right: 30px; background: rgba(39, 174, 96, 0.95); border-color: #2ecc71; }
+        #btn-jump { bottom: 40px; right: 125px; }
 
         .inventory-slot {
             width: 46px; height: 46px; border-radius: 10px; background: rgba(30, 41, 59, 0.8);
@@ -610,8 +637,13 @@
         </div>
     </div>
 
-    <!-- MOBILE TOUCH CONTROLS -->
-    <div id="joystick-zone"><div id="joystick-knob"></div></div>
+    <!-- MOBILE TOUCH CONTROLS (ARROW STYLE / D-PAD) -->
+    <div id="dpad-zone">
+        <button id="dpad-up" class="dpad-btn">▲</button>
+        <button id="dpad-left" class="dpad-btn">◀</button>
+        <button id="dpad-right" class="dpad-btn">▶</button>
+        <button id="dpad-down" class="dpad-btn">▼</button>
+    </div>
     <button id="btn-action-touch" class="mobile-btn">AMBIL</button>
     <button id="btn-jump" class="mobile-btn">LOMPAT</button>
 
@@ -921,8 +953,6 @@
         let isInGameMode = false;
         let hasPlayedIntroRewind = false;
         let yaw = 0, pitch = 0;
-        let joystickActive = false;
-        let joystickVector = { x: 0, y: 0 };
         let cameraPointerId = null;
 
         let interactableObjects = [];
@@ -1030,7 +1060,7 @@
             isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
             
             if (isMobile) {
-                document.getElementById('joystick-zone').style.display = 'block';
+                document.getElementById('dpad-zone').style.display = 'block';
                 document.getElementById('btn-action-touch').style.display = 'flex';
                 document.getElementById('btn-jump').style.display = 'flex';
             }
@@ -1257,7 +1287,7 @@
 
             container.addEventListener('pointerdown', (e) => {
                 if (!isInGameMode || !isMobile) return;
-                if (e.target.closest('.mobile-btn') || e.target.closest('#joystick-zone') || e.target.closest('.glass-panel')) return;
+                if (e.target.closest('.mobile-btn') || e.target.closest('#dpad-zone') || e.target.closest('.glass-panel')) return;
 
                 if (cameraPointerId !== null) return;
                 cameraPointerId = e.pointerId;
@@ -1657,64 +1687,38 @@
         }
 
         function setupTouchEvents() {
-            const joystickZone = document.getElementById('joystick-zone');
-            const knob = document.getElementById('joystick-knob');
-            let touchId = null;
-            let startX = 0, startY = 0;
+            const dpadButtons = [
+                { id: 'dpad-up', action: (val) => moveForward = val },
+                { id: 'dpad-down', action: (val) => moveBackward = val },
+                { id: 'dpad-left', action: (val) => moveLeft = val },
+                { id: 'dpad-right', action: (val) => moveRight = val }
+            ];
 
-            const handleTouchStart = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (touchId !== null) return;
+            dpadButtons.forEach(btnInfo => {
+                const btn = document.getElementById(btnInfo.id);
+                if (!btn) return;
 
-                const touch = e.changedTouches[0];
-                touchId = touch.identifier;
-                startX = touch.clientX;
-                startY = touch.clientY;
-                joystickActive = true;
-            };
+                const startPress = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    btnInfo.action(true);
+                    btn.classList.add('active');
+                };
 
-            const handleTouchMove = (e) => {
-                if (!joystickActive) return;
-                for (let touch of e.changedTouches) {
-                    if (touch.identifier === touchId) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        let dx = touch.clientX - startX;
-                        let dy = touch.clientY - startY;
-                        let maxRadius = 85;
-                        let dist = Math.min(maxRadius, Math.hypot(dx, dy));
-                        let angle = Math.atan2(dy, dx);
+                const endPress = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    btnInfo.action(false);
+                    btn.classList.remove('active');
+                };
 
-                        let knobX = Math.cos(angle) * dist;
-                        let knobY = Math.sin(angle) * dist;
+                btn.addEventListener('pointerdown', startPress);
+                btn.addEventListener('pointerup', endPress);
+                btn.addEventListener('pointercancel', endPress);
 
-                        knob.style.transform = `translate(${knobX}px, ${knobY}px)`;
-                        joystickVector.x = knobX / maxRadius;
-                        joystickVector.y = knobY / maxRadius;
-                        break;
-                    }
-                }
-            };
-
-            const handleTouchEnd = (e) => {
-                for (let touch of e.changedTouches) {
-                    if (touch.identifier === touchId) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        touchId = null;
-                        joystickActive = false;
-                        joystickVector = { x: 0, y: 0 };
-                        knob.style.transform = `translate(0px, 0px)`;
-                        break;
-                    }
-                }
-            };
-
-            joystickZone.addEventListener('touchstart', handleTouchStart, { passive: false });
-            window.addEventListener('touchmove', handleTouchMove, { passive: false });
-            window.addEventListener('touchend', handleTouchEnd, { passive: false });
-            window.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+                btn.addEventListener('touchstart', startPress, { passive: false });
+                btn.addEventListener('touchend', endPress, { passive: false });
+            });
         }
 
         function updatePlayerPhysics(delta) {
@@ -1737,11 +1741,6 @@
             if (moveBackward) direction.z += 1;
             if (moveLeft) direction.x -= 1;
             if (moveRight) direction.x += 1;
-
-            if (joystickActive) {
-                direction.x = joystickVector.x;
-                direction.z = joystickVector.y;
-            }
 
             direction.normalize();
 
