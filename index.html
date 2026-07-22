@@ -181,7 +181,7 @@
             box-shadow: 0 0 6px rgba(241, 196, 15, 0.9);
         }
 
-        /* Dynamic Touch Controls & LARGER JOYSTICK FOR PHONE */
+        /* Dynamic Touch Controls & LARGER JOYSTICK & BUTTONS FOR PHONE */
         .touch-indicator {
             position: absolute;
             width: 60px;
@@ -196,32 +196,30 @@
             z-index: 99;
         }
 
-        /* DI-DIBESARKAN: Joystick Zone dari 120px -> 160px untuk phone */
         #joystick-zone {
-            position: absolute; bottom: 20px; left: 20px; width: 160px; height: 160px;
+            position: absolute; bottom: 40px; left: 40px; width: 210px; height: 210px;
             background: rgba(255, 255, 255, 0.15); border-radius: 50%;
-            pointer-events: auto; border: 3px solid rgba(241, 196, 15, 0.5);
+            pointer-events: auto; border: 3px solid rgba(241, 196, 15, 0.6);
             touch-action: none; display: none; z-index: 25;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            box-shadow: 0 0 25px rgba(0,0,0,0.6);
         }
-        /* DI-DIBESARKAN: Knob Joystick dari 44px -> 60px */
         #joystick-knob {
-            position: absolute; top: 50px; left: 50px; width: 60px; height: 60px;
+            position: absolute; top: 65px; left: 65px; width: 80px; height: 80px;
             background: #f1c40f; border-radius: 50%; opacity: 0.95; pointer-events: none;
-            box-shadow: 0 0 20px rgba(241, 196, 15, 1);
+            box-shadow: 0 0 25px rgba(241, 196, 15, 1);
         }
 
         .mobile-btn {
-            position: absolute; width: 72px; height: 72px; background: rgba(15, 23, 42, 0.88);
-            border: 2px solid #f1c40f; border-radius: 50%; color: #fff;
+            position: absolute; width: 88px; height: 88px; background: rgba(15, 23, 42, 0.92);
+            border: 2.5px solid #f1c40f; border-radius: 50%; color: #fff;
             font-weight: 800; display: none; justify-content: center; align-items: center;
-            pointer-events: auto; font-size: 0.85rem; backdrop-filter: blur(6px);
-            box-shadow: 0 6px 16px rgba(0,0,0,0.6); z-index: 25;
+            pointer-events: auto; font-size: 0.95rem; backdrop-filter: blur(8px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.7); z-index: 25;
             touch-action: manipulation; transition: transform 0.1s ease;
         }
         .mobile-btn:active { transform: scale(0.9); background: #f1c40f; color: #000; }
-        #btn-action-touch { bottom: 25px; right: 20px; background: rgba(39, 174, 96, 0.95); border-color: #2ecc71; }
-        #btn-jump { bottom: 25px; right: 105px; }
+        #btn-action-touch { bottom: 45px; right: 40px; background: rgba(39, 174, 96, 0.95); border-color: #2ecc71; }
+        #btn-jump { bottom: 45px; right: 145px; }
 
         .inventory-slot {
             width: 46px; height: 46px; border-radius: 10px; background: rgba(30, 41, 59, 0.8);
@@ -1235,21 +1233,18 @@
             });
         }
 
-        // KAWALAN PANDANG MOUSE TANPA KLIK (POINTER LOCK FOR PC) & SLIDE FOR PHONE
         function setupMouseAndTouchLook() {
             const container = document.getElementById('canvas-container');
             const touchIndicator = document.getElementById('touchIndicator');
             let isTouching = false;
             let lastX = 0, lastY = 0;
 
-            // LOCK POINTER BILA TEKAN SKRIN PADA DESKTOP
             container.addEventListener('click', () => {
                 if (isInGameMode && !isMobile) {
                     container.requestPointerLock();
                 }
             });
 
-            // GERAKKAN MOUSE TANPA TEKAN/KLIK
             document.addEventListener('mousemove', (e) => {
                 if (!isInGameMode || isMobile) return;
                 if (document.pointerLockElement === container) {
@@ -1259,7 +1254,6 @@
                 }
             });
 
-            // SLIDE SKRIN PADA MOBILE UNTUK MEMUSINGKAN KAMERA 360°
             container.addEventListener('pointerdown', (e) => {
                 if (!isInGameMode || !isMobile) return;
                 if (e.target.closest('.mobile-btn') || e.target.closest('#joystick-zone')) return;
@@ -1301,7 +1295,6 @@
             container.addEventListener('pointercancel', stopTouch);
         }
 
-        // LOMPAT KE LEVEL MANA-MANA PILIHAN PENGGUNA (1-6)
         function selectAndJumpToLevel(lvlIdx) {
             currentLevelIndex = lvlIdx;
             const nextLvl = levels[currentLevelIndex];
@@ -1575,6 +1568,11 @@
             if (curLvl.currentCount >= curLvl.targetCount) {
                 soundEngine.playWinFanfare();
 
+                // MELEPASKAN KURSOR TETIKUS SEBAGAI AUTOMATIK APABILA LEVEL SELESAI
+                if (document.exitPointerLock) {
+                    document.exitPointerLock();
+                }
+
                 if (currentLevelIndex < levels.length - 1) {
                     showNoticeModal(
                         `✨ TAHNIAH! ${curLvl.badge} SELESAI!`,
@@ -1666,15 +1664,16 @@
                     if (touch.identifier === touchId) {
                         let dx = touch.clientX - startX;
                         let dy = touch.clientY - startY;
-                        let dist = Math.min(60, Math.hypot(dx, dy));
+                        let maxRadius = 85;
+                        let dist = Math.min(maxRadius, Math.hypot(dx, dy));
                         let angle = Math.atan2(dy, dx);
 
                         let knobX = Math.cos(angle) * dist;
                         let knobY = Math.sin(angle) * dist;
 
                         knob.style.transform = `translate(${knobX}px, ${knobY}px)`;
-                        joystickVector.x = knobX / 60;
-                        joystickVector.y = knobY / 60;
+                        joystickVector.x = knobX / maxRadius;
+                        joystickVector.y = knobY / maxRadius;
                     }
                 }
             });
@@ -1824,7 +1823,9 @@
 
         function returnToMainMenu() {
             isInGameMode = false;
-            document.exitPointerLock?.();
+            if (document.exitPointerLock) {
+                document.exitPointerLock();
+            }
             document.getElementById('game-hud').classList.add('hidden');
             document.getElementById('crosshair').style.display = 'none';
             document.getElementById('main-menu').classList.remove('hidden');
