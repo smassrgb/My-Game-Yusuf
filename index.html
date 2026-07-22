@@ -2,20 +2,70 @@
 <html lang="ms">
 <head>
     <meta charset="UTF-8">
+    <!-- PENTING UNTUK MOBILE: Elak auto-zoom bila tekan/double tap -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Kembara Nabi Yusuf A.S. - 3D Educational Game</title>
     
     <!-- CSS Dependencies & Fonts -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Segoe+UI&display=swap" rel="stylesheet">
     
     <style>
-        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: #fff; touch-action: none; }
+        /* ==========================================
+           1. RESET & RESPONSIVE CANVAS UTILITY
+           ========================================== */
+        * { 
+            box-sizing: border-box; 
+            margin: 0;
+            padding: 0;
+            user-select: none; 
+            -webkit-user-select: none; 
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body, html { 
+            width: 100vw; 
+            height: 100dvh; /* Dynamic Viewport Height untuk mobile browser */
+            overflow: hidden; /* Mencegah scrollbar muncul */
+            font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; 
+            background: #020617; 
+            color: #fff; 
+            touch-action: none; /* Mencegah gangguan scroll skrin pada mobile */
+        }
+
+        canvas {
+            display: block;
+        }
+
         .font-cinzel { font-family: 'Cinzel', serif; }
 
-        /* 3D Canvas Container */
-        #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+        /* 3D WebGL Canvas Container */
+        #canvas-container { 
+            width: 100vw; 
+            height: 100vh; 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            z-index: 1; 
+            touch-action: none;
+        }
+
+        /* Fullscreen UI Container Style */
+        .fullscreen-container {
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, rgba(30, 30, 47, 0.85), rgba(17, 16, 29, 0.95));
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 40;
+        }
 
         /* Glassmorphism Styling */
         .glass-panel {
@@ -29,7 +79,7 @@
         .gold-border { border: 2px solid #f1c40f; }
         .gold-glow { text-shadow: 0 0 20px rgba(241, 196, 15, 0.6); }
 
-        /* Menu UI Animations */
+        /* Animations */
         @keyframes pulseGlow {
             0%, 100% { box-shadow: 0 0 15px rgba(241, 196, 15, 0.4); }
             50% { box-shadow: 0 0 35px rgba(241, 196, 15, 0.85); }
@@ -42,13 +92,13 @@
         }
         .animate-fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
-        /* Custom Buttons */
+        /* Custom UI Buttons */
         .btn-menu {
             background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));
             border: 1.5px solid rgba(241, 196, 15, 0.4);
             color: #f8fafc;
-            padding: 14px 28px;
-            border-radius: 14px;
+            padding: 12px 24px;
+            border-radius: 50px;
             font-weight: 700;
             letter-spacing: 1px;
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -57,13 +107,14 @@
             justify-content: center;
             gap: 12px;
             cursor: pointer;
+            touch-action: manipulation;
         }
         .btn-menu:hover {
             border-color: #f1c40f;
-            background: linear-gradient(135deg, #d35400, #e67e22);
+            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
             color: #ffffff;
             transform: translateY(-3px) scale(1.02);
-            box-shadow: 0 10px 25px rgba(211, 84, 0, 0.5);
+            box-shadow: 0 10px 20px rgba(0, 210, 255, 0.3);
         }
 
         /* Compass Visual Widget */
@@ -97,44 +148,81 @@
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             transition: opacity 0.5s ease;
         }
-
-        /* Clock Animation Canvas */
         #clock-canvas { width: 280px; height: 280px; }
 
-        /* Crosshair */
+        /* Crosshair Overlay */
         #crosshair {
-            position: absolute; top: 50%; left: 50%; width: 8px; height: 8px;
-            background: rgba(255, 255, 255, 0.9); border-radius: 50%;
-            transform: translate(-50%, -50%); pointer-events: none; z-index: 15;
-            border: 2px solid rgba(0,0,0,0.5); box-shadow: 0 0 10px rgba(241,196,15,0.8);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 24px;
+            height: 24px;
+            pointer-events: none;
+            z-index: 15;
+            display: none;
+        }
+        #crosshair::before,
+        #crosshair::after {
+            content: '';
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+        }
+        #crosshair::before { top: 50%; left: 0; width: 100%; height: 2px; transform: translateY(-50%); }
+        #crosshair::after { left: 50%; top: 0; width: 2px; height: 100%; transform: translateX(-50%); }
+        #crosshair .dot {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 4px; height: 4px;
+            background-color: #f1c40f;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 6px rgba(241, 196, 15, 0.9);
         }
 
-        /* Joystick for Mobile */
+        /* Dynamic Touch Controls & LARGER JOYSTICK FOR PHONE */
+        .touch-indicator {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.25);
+            border: 2px solid rgba(241, 196, 15, 0.8);
+            box-shadow: 0 0 12px rgba(241, 196, 15, 0.5);
+            pointer-events: none;
+            display: none;
+            transform: translate(-50%, -50%);
+            z-index: 99;
+        }
+
+        /* DI-DIBESARKAN: Joystick Zone dari 120px -> 160px untuk phone */
         #joystick-zone {
-            position: absolute; bottom: 24px; left: 24px; width: 120px; height: 120px;
-            background: rgba(255, 255, 255, 0.12); border-radius: 50%;
-            pointer-events: auto; border: 2px solid rgba(255,255,255,0.25);
-            touch-action: none; display: none; z-index: 20;
+            position: absolute; bottom: 20px; left: 20px; width: 160px; height: 160px;
+            background: rgba(255, 255, 255, 0.15); border-radius: 50%;
+            pointer-events: auto; border: 3px solid rgba(241, 196, 15, 0.5);
+            touch-action: none; display: none; z-index: 25;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
+        /* DI-DIBESARKAN: Knob Joystick dari 44px -> 60px */
         #joystick-knob {
-            position: absolute; top: 38px; left: 38px; width: 44px; height: 44px;
-            background: #f1c40f; border-radius: 50%; opacity: 0.9; pointer-events: none;
-            box-shadow: 0 0 15px rgba(241, 196, 15, 0.9);
+            position: absolute; top: 50px; left: 50px; width: 60px; height: 60px;
+            background: #f1c40f; border-radius: 50%; opacity: 0.95; pointer-events: none;
+            box-shadow: 0 0 20px rgba(241, 196, 15, 1);
         }
 
-        /* Mobile Action Buttons */
         .mobile-btn {
-            position: absolute; width: 68px; height: 68px; background: rgba(15, 23, 42, 0.88);
+            position: absolute; width: 72px; height: 72px; background: rgba(15, 23, 42, 0.88);
             border: 2px solid #f1c40f; border-radius: 50%; color: #fff;
             font-weight: 800; display: none; justify-content: center; align-items: center;
             pointer-events: auto; font-size: 0.85rem; backdrop-filter: blur(6px);
-            box-shadow: 0 6px 16px rgba(0,0,0,0.6); z-index: 20;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.6); z-index: 25;
+            touch-action: manipulation; transition: transform 0.1s ease;
         }
-        .mobile-btn:active { background: #f1c40f; color: #000; }
+        .mobile-btn:active { transform: scale(0.9); background: #f1c40f; color: #000; }
         #btn-action-touch { bottom: 25px; right: 20px; background: rgba(39, 174, 96, 0.95); border-color: #2ecc71; }
-        #btn-jump { bottom: 25px; right: 100px; }
+        #btn-jump { bottom: 25px; right: 105px; }
 
-        /* Inventory Slot */
         .inventory-slot {
             width: 46px; height: 46px; border-radius: 10px; background: rgba(30, 41, 59, 0.8);
             border: 1px solid rgba(241, 196, 15, 0.4); display: flex; align-items: center; justify-content: center;
@@ -142,60 +230,81 @@
         }
         .inventory-slot.active { border-color: #2ecc71; box-shadow: 0 0 10px rgba(46, 204, 113, 0.6); }
 
-        /* Scrollbar styling */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
         ::-webkit-scrollbar-thumb { background: #f1c40f; border-radius: 3px; }
     </style>
 
-    <!-- Three.js Library & GLTFLoader -->
+    <!-- Three.js Library, OrbitControls & GLTFLoader -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 </head>
 <body>
 
     <!-- 3D WebGL Canvas Container -->
     <div id="canvas-container"></div>
-    <div id="crosshair" style="display: none;"></div>
+    
+    <!-- Dynamic Touch Indicator -->
+    <div class="touch-indicator" id="touchIndicator"></div>
+
+    <!-- Custom Crosshair -->
+    <div id="crosshair"><div class="dot"></div></div>
 
     <!-- MAIN MENU OVERLAY -->
-    <div id="main-menu" class="absolute inset-0 z-40 flex flex-col items-center justify-between p-6 md:p-12 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-slate-950/80">
-        <div class="text-center mt-6 animate-fade-in">
+    <div id="main-menu" class="fullscreen-container">
+        <!-- Navbar Atas -->
+        <nav class="w-full flex justify-between items-center max-w-6xl z-10">
+            <div class="text-xl font-bold tracking-wider text-cyan-400">DESAIGNER.</div>
+            <div class="space-x-4 text-sm font-semibold">
+                <a href="#" class="hover:text-cyan-400 transition">Beranda</a>
+                <a href="#" class="hover:text-cyan-400 transition">Fitur</a>
+                <a href="#" class="hover:text-cyan-400 transition">Kontak</a>
+            </div>
+        </nav>
+
+        <!-- Hero / Content Utama -->
+        <div class="text-center my-auto animate-fade-in max-w-2xl z-10">
             <div class="inline-block px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-400/30 text-amber-400 text-xs font-bold tracking-widest uppercase mb-3">
                 🕌 Ahsanul Qasas • Kisah Terbaik Al-Quran
             </div>
-            <h1 class="font-cinzel text-3xl sm:text-5xl md:text-6xl font-black text-amber-400 tracking-wider gold-glow">
+            <h1 class="font-cinzel text-3xl sm:text-5xl font-black text-amber-400 tracking-wider gold-glow mb-2">
                 KEMBARA NABI YUSUF A.S.
             </h1>
-            <p class="text-slate-300 text-sm sm:text-base mt-2 max-w-xl mx-auto font-medium">
-                Pengembaraan Interaktif 3D Memahami Iktibar, Ketabahan, dan Hikmah Perjalanan Hidup Nabi Yusuf A.S.
+            <p class="text-slate-300 text-sm sm:text-base mb-6 font-medium leading-relaxed">
+                Pengalaman Visual Tanpa Batas: Pengembaraan Interaktif 3D Memahami Iktibar, Ketabahan, dan Hikmah Perjalanan Hidup Nabi Yusuf A.S.
             </p>
+
+            <!-- Group Butang Pilihan Utama -->
+            <div class="w-full max-w-sm mx-auto space-y-2.5 glass-panel p-5 rounded-3xl border-amber-500/40">
+                <button id="btn-play" class="btn-menu w-full pulse-gold text-base" onclick="startPlaySequence(false)">
+                    <span>▶</span> <span id="btn-play-text">MULAI SEKARANG</span>
+                </button>
+                <button id="btn-resume" class="btn-menu w-full text-emerald-400 border-emerald-500/50 hidden" onclick="startPlaySequence(true)">
+                    <span>⏯</span> <span>SAMBUNG PERMAINAN</span>
+                </button>
+                <button id="btn-select-level" class="btn-menu w-full text-cyan-300 border-cyan-500/40" onclick="toggleModal('modal-levels')">
+                    <span>🗺️</span> <span>PILIH STESEN (LVL 1-6)</span>
+                </button>
+                <button id="btn-models" class="btn-menu w-full text-amber-300" onclick="toggleModal('modal-models')">
+                    <span>🎨</span> <span>TUKAR MODEL 3D</span>
+                </button>
+                <button id="btn-settings" class="btn-menu w-full" onclick="toggleModal('modal-settings')">
+                    <span>⚙</span> <span>TETAPAN</span>
+                </button>
+                <button id="btn-notes" class="btn-menu w-full" onclick="toggleModal('modal-notes')">
+                    <span>📖</span> <span>NOTA & RUJUKAN</span>
+                </button>
+                <button id="btn-quit" class="btn-menu w-full text-rose-400 hover:text-white" onclick="quitGame()">
+                    <span>❌</span> <span>KELUAR</span>
+                </button>
+            </div>
         </div>
 
-        <div class="w-full max-w-xs space-y-3 glass-panel p-6 rounded-2xl border-amber-500/40 animate-fade-in my-auto">
-            <button id="btn-play" class="btn-menu w-full pulse-gold text-lg" onclick="startPlaySequence(false)">
-                <span>▶</span> <span id="btn-play-text">MAIN PERMAINAN</span>
-            </button>
-            <button id="btn-resume" class="btn-menu w-full text-emerald-400 border-emerald-500/50 hidden" onclick="startPlaySequence(true)">
-                <span>⏯</span> <span>SAMBUNG PERMAINAN</span>
-            </button>
-            <button id="btn-models" class="btn-menu w-full text-amber-300" onclick="toggleModal('modal-models')">
-                <span>🎨</span> <span>TUKAR MODEL 3D</span>
-            </button>
-            <button id="btn-settings" class="btn-menu w-full" onclick="toggleModal('modal-settings')">
-                <span>⚙</span> <span>TETAPAN</span>
-            </button>
-            <button id="btn-notes" class="btn-menu w-full" onclick="toggleModal('modal-notes')">
-                <span>📖</span> <span>NOTA & RUJUKAN</span>
-            </button>
-            <button id="btn-quit" class="btn-menu w-full text-rose-400 hover:text-white" onclick="quitGame()">
-                <span>❌</span> <span>KELUAR</span>
-            </button>
-        </div>
-
-        <div class="text-center text-xs text-slate-400 font-medium pb-2">
-            Versi Penambahbaikan 3D • Dibangunkan untuk Pembelajaran Agama & Moral Interaktif
-        </div>
+        <!-- Footer -->
+        <footer class="text-xs text-slate-400 text-center z-10">
+            &copy; 2026 UI Fullscreen Layout • Dibangunkan untuk Pembelajaran Agama & Moral Interaktif
+        </footer>
     </div>
 
     <!-- TIME REWIND CUTSCENE OVERLAY -->
@@ -235,13 +344,19 @@
                 </div>
             </div>
 
-            <div class="flex gap-2 pointer-events-auto">
+            <div class="flex gap-2 pointer-events-auto flex-wrap justify-end">
                 <div class="glass-panel p-2 rounded-2xl flex gap-1.5 items-center hidden sm:flex">
                     <div id="inv-slot-1" class="inventory-slot" title="Tali & Baldi">🪣</div>
                     <div id="inv-slot-2" class="inventory-slot" title="Kunci Emas">🔑</div>
                     <div id="inv-slot-3" class="inventory-slot" title="Baju Yusuf">🥋</div>
                 </div>
 
+                <button class="glass-panel p-3 rounded-2xl text-cyan-300 font-bold hover:bg-slate-800/80 transition" onclick="toggleModal('modal-levels')" title="Pilih Level 1-6">
+                    🗺️ Level
+                </button>
+                <button class="glass-panel p-3 rounded-2xl text-amber-300 font-bold hover:bg-slate-800/80 transition" onclick="toggleFullscreen()" title="Skrin Penuh (Fullscreen)">
+                    ⛶
+                </button>
                 <button class="glass-panel p-3 rounded-2xl text-amber-300 font-bold hover:bg-slate-800/80 transition" onclick="toggleModal('modal-models')" title="Tukar Model 3D">
                     🎨
                 </button>
@@ -286,7 +401,84 @@
         </div>
     </div>
 
-    <!-- MODAL: NOTA & RUJUKAN SURAH YUSUF -->
+    <!-- MODAL: PILIH STESEN / LEVEL (1-6) -->
+    <div id="modal-levels" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-2xl rounded-3xl p-6 border-cyan-500/50 relative animate-fade-in space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-700">
+                <div>
+                    <h3 class="font-cinzel text-2xl font-bold text-cyan-400">🗺️ Pilih Stesen Kembara (Level 1 - 6)</h3>
+                    <p class="text-xs text-slate-400">Pilih stesen untuk terus lompat ke lokasi permainan</p>
+                </div>
+                <button onclick="toggleModal('modal-levels')" class="text-slate-400 hover:text-white text-xl font-bold">✕</button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-2">
+                <!-- Level 1 -->
+                <button onclick="selectAndJumpToLevel(0)" class="text-left bg-slate-900/80 hover:bg-amber-500/20 border border-amber-500/40 hover:border-amber-400 p-3.5 rounded-2xl transition group">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="bg-amber-500/20 text-amber-300 text-xs font-bold px-2.5 py-0.5 rounded-md border border-amber-400/30">STESEN 1</span>
+                        <span class="text-xs text-slate-400 group-hover:text-amber-300 font-bold">Lompat ➔</span>
+                    </div>
+                    <h4 class="font-cinzel text-amber-400 font-bold text-sm">🌟 Mimpi 11 Bintang</h4>
+                    <p class="text-[11px] text-slate-300 mt-1">Kutip bintang & selaraskan sujud matahari dan bulan.</p>
+                </button>
+
+                <!-- Level 2 -->
+                <button onclick="selectAndJumpToLevel(1)" class="text-left bg-slate-900/80 hover:bg-amber-500/20 border border-amber-500/40 hover:border-amber-400 p-3.5 rounded-2xl transition group">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="bg-amber-500/20 text-amber-300 text-xs font-bold px-2.5 py-0.5 rounded-md border border-amber-400/30">STESEN 2</span>
+                        <span class="text-xs text-slate-400 group-hover:text-amber-300 font-bold">Lompat ➔</span>
+                    </div>
+                    <h4 class="font-cinzel text-amber-400 font-bold text-sm">🛢️ Perigi Tua Padang Pasir</h4>
+                    <p class="text-[11px] text-slate-300 mt-1">Ambil tali & baldi untuk menyelamatkan Nabi Yusuf A.S.</p>
+                </button>
+
+                <!-- Level 3 -->
+                <button onclick="selectAndJumpToLevel(2)" class="text-left bg-slate-900/80 hover:bg-amber-500/20 border border-amber-500/40 hover:border-amber-400 p-3.5 rounded-2xl transition group">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="bg-amber-500/20 text-amber-300 text-xs font-bold px-2.5 py-0.5 rounded-md border border-amber-400/30">STESEN 3</span>
+                        <span class="text-xs text-slate-400 group-hover:text-amber-300 font-bold">Lompat ➔</span>
+                    </div>
+                    <h4 class="font-cinzel text-amber-400 font-bold text-sm">🐫 Kafilah Musafir & Dagangan</h4>
+                    <p class="text-[11px] text-slate-300 mt-1">Kumpul barang dagangan musafir padang pasir.</p>
+                </button>
+
+                <!-- Level 4 -->
+                <button onclick="selectAndJumpToLevel(3)" class="text-left bg-slate-900/80 hover:bg-amber-500/20 border border-amber-500/40 hover:border-amber-400 p-3.5 rounded-2xl transition group">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="bg-amber-500/20 text-amber-300 text-xs font-bold px-2.5 py-0.5 rounded-md border border-amber-400/30">STESEN 4</span>
+                        <span class="text-xs text-slate-400 group-hover:text-amber-300 font-bold">Lompat ➔</span>
+                    </div>
+                    <h4 class="font-cinzel text-amber-400 font-bold text-sm">🏛️ Istana Mesir & Penjara</h4>
+                    <p class="text-[11px] text-slate-300 mt-1">Cari kunci emas & buka pintu gerbang kurungan.</p>
+                </button>
+
+                <!-- Level 5 -->
+                <button onclick="selectAndJumpToLevel(4)" class="text-left bg-slate-900/80 hover:bg-amber-500/20 border border-amber-500/40 hover:border-amber-400 p-3.5 rounded-2xl transition group">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="bg-amber-500/20 text-amber-300 text-xs font-bold px-2.5 py-0.5 rounded-md border border-amber-400/30">STESEN 5</span>
+                        <span class="text-xs text-slate-400 group-hover:text-amber-300 font-bold">Lompat ➔</span>
+                    </div>
+                    <h4 class="font-cinzel text-amber-400 font-bold text-sm">🌾 7 Tahun Subur & Gudang Gandum</h4>
+                    <p class="text-[11px] text-slate-300 mt-1">Tuai 7 tangkai gandum emas untuk simpanan musim kemarau.</p>
+                </button>
+
+                <!-- Level 6 -->
+                <button onclick="selectAndJumpToLevel(5)" class="text-left bg-slate-900/80 hover:bg-amber-500/20 border border-amber-500/40 hover:border-amber-400 p-3.5 rounded-2xl transition group">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="bg-amber-500/20 text-amber-300 text-xs font-bold px-2.5 py-0.5 rounded-md border border-amber-400/30">STESEN 6</span>
+                        <span class="text-xs text-slate-400 group-hover:text-amber-300 font-bold">Lompat ➔</span>
+                    </div>
+                    <h4 class="font-cinzel text-amber-400 font-bold text-sm">👑 Penyatuan & Baju Yusuf</h4>
+                    <p class="text-[11px] text-slate-300 mt-1">Usapkan baju pada mata ayahanda Nabi Yaakub A.S.</p>
+                </button>
+            </div>
+
+            <button onclick="toggleModal('modal-levels')" class="btn-menu w-full mt-4">Tutup Pilih Stesen</button>
+        </div>
+    </div>
+
+    <!-- MODAL: NOTA & RUJUKAN -->
     <div id="modal-notes" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
         <div class="glass-panel w-full max-w-2xl max-h-[85vh] rounded-3xl p-6 overflow-y-auto border-amber-500/40 relative animate-fade-in">
             <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-700">
@@ -317,7 +509,7 @@
         </div>
     </div>
 
-    <!-- MODAL: TETAPAN GAME -->
+    <!-- MODAL: TETAPAN -->
     <div id="modal-settings" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
         <div class="glass-panel w-full max-w-md rounded-3xl p-6 border-amber-500/40 relative animate-fade-in space-y-5">
             <div class="flex justify-between items-center pb-3 border-b border-slate-700">
@@ -326,32 +518,38 @@
             </div>
 
             <div>
+                <button onclick="toggleFullscreen()" class="btn-menu w-full text-sm py-2 bg-slate-800 hover:bg-slate-700 text-amber-300">
+                    ⛶ Tukar Mod Fullscreen
+                </button>
+            </div>
+
+            <div>
                 <label class="block text-amber-300 text-xs font-bold uppercase mb-2">🔊 Lantangan Muzik & Kesan Bunyi:</label>
                 <input type="range" id="slider-volume" min="0" max="1" step="0.05" value="0.6" onchange="updateAudioVolume()" class="w-full accent-amber-400 cursor-pointer">
             </div>
 
             <div>
-                <label class="block text-amber-300 text-xs font-bold uppercase mb-2">🎛️ Sensitiviti Kamera / Kawalan:</label>
-                <input type="range" id="slider-sens" min="0.4" max="2.5" step="0.1" value="1.0" onchange="updateSensitivity()" class="w-full accent-amber-400 cursor-pointer">
+                <label class="block text-amber-300 text-xs font-bold uppercase mb-2">🎛️ Sensitiviti Kamera / Kawalan Tetikus:</label>
+                <input type="range" id="slider-sens" min="0.4" max="3.0" step="0.1" value="1.0" onchange="updateSensitivity()" class="w-full accent-amber-400 cursor-pointer">
             </div>
 
             <button onclick="toggleModal('modal-settings')" class="btn-menu w-full mt-4">Simpan & Tutup</button>
         </div>
     </div>
 
-    <!-- MODAL: TUKAR MODEL 3D (GLB MODEL MANAGER) -->
+    <!-- MODAL: TUKAR MODEL 3D -->
     <div id="modal-models" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
         <div class="glass-panel w-full max-w-2xl rounded-3xl p-6 border-amber-500/40 relative animate-fade-in space-y-4 max-h-[88vh] overflow-y-auto">
             <div class="flex justify-between items-center pb-3 border-b border-slate-700 sticky top-0 bg-slate-950/90 z-10 backdrop-blur-md pt-1">
                 <div>
                     <h3 class="font-cinzel text-xl font-bold text-amber-400">🎨 Tukar Semua Model 3D (Custom GLB)</h3>
-                    <p class="text-[11px] text-slate-400">Kemaskini fail .glb bagi kesemua 17 objek di dalam 6 stesen kembara</p>
+                    <p class="text-[11px] text-slate-400">Kemaskini fail .glb bagi objek 3D di dalam permainan</p>
                 </div>
                 <button onclick="toggleModal('modal-models')" class="text-slate-400 hover:text-white text-xl font-bold">✕</button>
             </div>
 
             <p class="text-xs text-slate-300 leading-relaxed">
-                Anda boleh memasukkan <strong>URL fail .glb</strong> baharu atau memuat naik fail dari komputer anda untuk sebarang objek 3D di bawah:
+                Anda boleh memasukkan <strong>URL Direct Raw GitHub</strong> baharu atau memuat naik fail dari komputer anda:
             </p>
 
             <div class="space-y-5">
@@ -368,28 +566,10 @@
                             <input type="file" id="file-model-star" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('star', this)">
                         </div>
                         <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
-                            <label class="block text-amber-300 text-[11px] font-bold mb-1">☀️ Matahari (Sun):</label>
-                            <input type="text" id="input-model-sun" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
-                            <button type="button" onclick="document.getElementById('file-model-sun').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
-                            <input type="file" id="file-model-sun" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('sun', this)">
-                        </div>
-                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
-                            <label class="block text-amber-300 text-[11px] font-bold mb-1">🌙 Bulan (Moon):</label>
-                            <input type="text" id="input-model-moon" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
-                            <button type="button" onclick="document.getElementById('file-model-moon').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
-                            <input type="file" id="file-model-moon" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('moon', this)">
-                        </div>
-                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
                             <label class="block text-amber-300 text-[11px] font-bold mb-1">⛺ Khemah (Tent):</label>
                             <input type="text" id="input-model-tent" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
                             <button type="button" onclick="document.getElementById('file-model-tent').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
                             <input type="file" id="file-model-tent" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('tent', this)">
-                        </div>
-                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 md:col-span-2">
-                            <label class="block text-amber-300 text-[11px] font-bold mb-1">🌴 Pokok Kurma (Palm Tree):</label>
-                            <input type="text" id="input-model-palmTree" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
-                            <button type="button" onclick="document.getElementById('file-model-palmTree').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
-                            <input type="file" id="file-model-palmTree" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('palmTree', this)">
                         </div>
                     </div>
                 </div>
@@ -414,102 +594,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- STESEN 3 -->
-                <div class="border border-amber-500/30 rounded-2xl p-3.5 bg-slate-900/60">
-                    <h4 class="text-xs font-bold text-amber-400 font-cinzel mb-3 flex items-center gap-2">
-                        <span>🐪</span> STESEN 3: KAFILAH MUSAFIR & DAGANGAN
-                    </h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
-                            <label class="block text-amber-300 text-[11px] font-bold mb-1">🐫 Unta (Camel):</label>
-                            <input type="text" id="input-model-camel" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
-                            <button type="button" onclick="document.getElementById('file-model-camel').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
-                            <input type="file" id="file-model-camel" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('camel', this)">
-                        </div>
-                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
-                            <label class="block text-amber-300 text-[11px] font-bold mb-1">📦 Barang Dagangan (Trade Goods):</label>
-                            <input type="text" id="input-model-tradeGood" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
-                            <button type="button" onclick="document.getElementById('file-model-tradeGood').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
-                            <input type="file" id="file-model-tradeGood" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('tradeGood', this)">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- STESEN 4 -->
-                <div class="border border-amber-500/30 rounded-2xl p-3.5 bg-slate-900/60">
-                    <h4 class="text-xs font-bold text-amber-400 font-cinzel mb-3 flex items-center gap-2">
-                        <span>🏛️</span> STESEN 4: ISTANA MESIR & PENJARA
-                    </h4>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
-                            <label class="block text-amber-300 text-[11px] font-bold mb-1">🏛️ Tiang Mesir (Pillar):</label>
-                            <input type="text" id="input-model-egyptianColumn" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
-                            <button type="button" onclick="document.getElementById('file-model-egyptianColumn').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
-                            <input type="file" id="file-model-egyptianColumn" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('egyptianColumn', this)">
-                        </div>
-                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
-                            <label class="block text-amber-300 text-[11px] font-bold mb-1">🚪 Gate Penjara (Dungeon Gate):</label>
-                            <input type="text" id="input-model-dungeonGate" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
-                            <button type="button" onclick="document.getElementById('file-model-dungeonGate').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
-                            <input type="file" id="file-model-dungeonGate" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('dungeonGate', this)">
-                        </div>
-                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
-                            <label class="block text-amber-300 text-[11px] font-bold mb-1">🔑 Kunci Emas (Golden Key):</label>
-                            <input type="text" id="input-model-goldenKey" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
-                            <button type="button" onclick="document.getElementById('file-model-goldenKey').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
-                            <input type="file" id="file-model-goldenKey" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('goldenKey', this)">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- STESEN 5 -->
-                <div class="border border-amber-500/30 rounded-2xl p-3.5 bg-slate-900/60">
-                    <h4 class="text-xs font-bold text-amber-400 font-cinzel mb-3 flex items-center gap-2">
-                        <span>🌾</span> STESEN 5: GUDANG GANDUM & TUAIAN
-                    </h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
-                            <label class="block text-amber-300 text-[11px] font-bold mb-1">🏠 Gudang Silo (Granary):</label>
-                            <input type="text" id="input-model-granary" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
-                            <button type="button" onclick="document.getElementById('file-model-granary').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
-                            <input type="file" id="file-model-granary" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('granary', this)">
-                        </div>
-                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
-                            <label class="block text-amber-300 text-[11px] font-bold mb-1">🌾 Gandum (Wheat Field):</label>
-                            <input type="text" id="input-model-wheat" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
-                            <button type="button" onclick="document.getElementById('file-model-wheat').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
-                            <input type="file" id="file-model-wheat" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('wheat', this)">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- STESEN 6 -->
-                <div class="border border-amber-500/30 rounded-2xl p-3.5 bg-slate-900/60">
-                    <h4 class="text-xs font-bold text-amber-400 font-cinzel mb-3 flex items-center gap-2">
-                        <span>👑</span> STESEN 6: PENYATUAN KELUARGA
-                    </h4>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
-                            <label class="block text-amber-300 text-[11px] font-bold mb-1">🪑 Takhta Diraja (Throne):</label>
-                            <input type="text" id="input-model-throne" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
-                            <button type="button" onclick="document.getElementById('file-model-throne').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
-                            <input type="file" id="file-model-throne" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('throne', this)">
-                        </div>
-                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
-                            <label class="block text-amber-300 text-[11px] font-bold mb-1">🥋 Baju Nabi Yusuf (Robe):</label>
-                            <input type="text" id="input-model-yusufRobe" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
-                            <button type="button" onclick="document.getElementById('file-model-yusufRobe').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
-                            <input type="file" id="file-model-yusufRobe" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('yusufRobe', this)">
-                        </div>
-                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
-                            <label class="block text-amber-300 text-[11px] font-bold mb-1">👨‍🦳 Nabi Yaakub (Jacob):</label>
-                            <input type="text" id="input-model-father_jacob" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
-                            <button type="button" onclick="document.getElementById('file-model-father_jacob').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
-                            <input type="file" id="file-model-father_jacob" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('father_jacob', this)">
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <button onclick="saveAndApplyCustomModels()" class="btn-menu w-full mt-4 text-base font-bold">
@@ -530,8 +614,8 @@
 
     <!-- MOBILE TOUCH CONTROLS -->
     <div id="joystick-zone"><div id="joystick-knob"></div></div>
-    <div id="btn-action-touch" class="mobile-btn" onclick="interactWithObject()">AMBIL</div>
-    <div id="btn-jump" class="mobile-btn">LOMPAT</div>
+    <button id="btn-action-touch" class="mobile-btn">AMBIL</button>
+    <button id="btn-jump" class="mobile-btn">LOMPAT</button>
 
     <!-- AUDIO BACKGROUND MUSIC -->
     <audio id="bg-music" loop preload="auto">
@@ -539,9 +623,39 @@
     </audio>
 
     <script>
-        // ==========================================
-        // 1. SOUND ENGINE (Synthesized Audio & BGM)
-        // ==========================================
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    alert(`Gagal masuk mod fullscreen: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        const DEFAULT_MODELS = {
+            tent: 'https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/Tent%20by%20J-Toastie%20-%200LnXUwcQzk.glb',
+            bucketRope: 'https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/Bucket%20by%20Quaternius%20-%20tKTttwROq7.glb',
+            goldenKey: 'https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/Key%20by%20Quaternius%20-%20bg6e1lfNsO.glb',
+            throne: 'https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/royal_throne_by_modenese.glb',
+            fatherJacob: 'https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/Glasses%20by%20iPoly3D%20-%20crbuIoq2dO.glb',
+            star: 'https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/Star%20by%20Poly%20by%20Google%20-%209NXf-SDxJny.glb',
+            sun: 'https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/Sun%20by%20Zoe%20XR%20-%207diieNtphvD.glb',
+            moon: 'https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/Moon%20by%20Zoe%20XR%20-%2010VNaCg1jYM.glb',
+            palmTree: 'https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/Palm%20tree%20by%20Poly%20by%20Google%20-%201l79utpMAy0.glb',
+            well: 'https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/Well%20by%20Quaternius%20-%20QlqncKYxXb.glb',
+            camel: 'https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/Camel%20by%20Poly%20by%20Google%20-%20cyuwV4fg0B1.glb',
+            tradeGood: 'https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/Crate%20by%20Quaternius%20-%203OEFd1AWfa.glb',
+            egyptianColumn: 'https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/Pillar%20by%20Kay%20Lousberg%20-%201nt8n3rVKU.glb',
+            granary: 'https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/Storage%20House%20by%20Quaternius%20-%20d2ZQWcuhwR.glb',
+            wheat: 'https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/Field%20of%20wheat%20by%20Poly%20by%20Google%20-%20cNX9BRNG6ep.glb',
+            yusufRobe: 'https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/robe_cloth_for_iclone_and_character_creator.glb'
+        };
+
+        let GITHUB_MODELS = { ...DEFAULT_MODELS };
+
         class SoundEngine {
             constructor() {
                 this.ctx = null;
@@ -627,38 +741,9 @@
         }
         const soundEngine = new SoundEngine();
 
-        const CDN_REPO_URL = "https://cdn.jsdelivr.net/gh/smassrgb/My-Game-Yusuf@main/";
-
-        // Penggabungan Pautan Model 3D Direct Raw GitHub ke Tatasusunan Aset GITHUB_MODELS
-        let GITHUB_MODELS = {
-            star: CDN_REPO_URL + encodeURIComponent("Star by Poly by Google - 9NXf-SDxJny.glb"),
-            sun: CDN_REPO_URL + encodeURIComponent("Sun by Zoe XR - 7diieNtphvD.glb"),
-            moon: CDN_REPO_URL + encodeURIComponent("Moon by Zoe XR - 10VNaCg1jYM.glb"),
-            // Model 1: Khemah (Tent)
-            tent: 'https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/Tent%20by%20J-Toastie%20-%200LnXUwcQzk.glb',
-            palmTree: CDN_REPO_URL + encodeURIComponent("Palm tree by Poly by Google - 1l79utpMAy0.glb"),
-            well: CDN_REPO_URL + encodeURIComponent("Well by Quaternius - QlqncKYxXb.glb"),
-            // Model 2: Baldi & Tali (Bucket and Rope)
-            bucketRope: 'https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/Bucket%20by%20Quaternius%20-%20tKTttwROq7.glb',
-            camel: CDN_REPO_URL + encodeURIComponent("Camel by Poly by Google - cyuwV4fg0B1.glb"),
-            tradeGood: CDN_REPO_URL + encodeURIComponent("Crate by Quaternius - 3OEFd1AWfa.glb"),
-            egyptianColumn: CDN_REPO_URL + encodeURIComponent("Pillar by Kay Lousberg - 1nt8n3rVKU.glb"),
-            dungeonGate: "", // Custom static stone archway gate
-            // Model 3: Kunci Emas (Golden Key)
-            goldenKey: 'https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/Key%20by%20Quaternius%20-%20bg6e1lfNsO.glb',
-            granary: CDN_REPO_URL + encodeURIComponent("Storage House by Quaternius - d2ZQWcuhwR.glb"),
-            wheat: CDN_REPO_URL + encodeURIComponent("Field of wheat by Poly by Google - cNX9BRNG6ep.glb"),
-            // Model 4: Takhta Diraja (Royal Throne)
-            throne: 'https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/royal_throne_by_modenese.glb',
-            yusufRobe: CDN_REPO_URL + encodeURIComponent("robe_cloth_for_iclone_and_character_creator.glb"),
-            // Model 5: Nabi Yaakub / Jacob
-            father_jacob: 'https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/Glasses%20by%20iPoly3D%20-%20crbuIoq2dO.glb'
-        };
-
         const gltfLoader = new THREE.GLTFLoader();
         const loadedAssetGroups = [];
 
-        // Advanced Asset Creator with Bounding-Box Auto Scale Normalization
         function createOrLoadAsset(modelKey, fallbackFn, position, targetSize = null, rotation = {x:0, y:0, z:0}) {
             const parentGroup = new THREE.Group();
             parentGroup.position.copy(position);
@@ -684,7 +769,6 @@
                             }
                         });
 
-                        // Auto Normalization of Size via Bounding Box
                         if (targetSize) {
                             const bbox = new THREE.Box3().setFromObject(loadedMesh);
                             const size = new THREE.Vector3();
@@ -712,7 +796,6 @@
             return parentGroup;
         }
 
-        // Function to reload model asset dynamically from UI Custom Model Manager
         function reloadAssetGroup(modelKey, newUrl) {
             GITHUB_MODELS[modelKey] = newUrl;
             loadedAssetGroups.forEach(group => {
@@ -761,14 +844,7 @@
         }
 
         function saveAndApplyCustomModels() {
-            const allModelKeys = [
-                'star', 'sun', 'moon', 'tent', 'palmTree',
-                'well', 'bucketRope',
-                'camel', 'tradeGood',
-                'egyptianColumn', 'dungeonGate', 'goldenKey',
-                'granary', 'wheat',
-                'throne', 'yusufRobe', 'father_jacob'
-            ];
+            const allModelKeys = ['star', 'sun', 'moon', 'tent', 'palmTree', 'well', 'bucketRope', 'camel', 'tradeGood', 'egyptianColumn', 'goldenKey', 'granary', 'wheat', 'throne', 'yusufRobe', 'fatherJacob'];
 
             let countUpdated = 0;
             allModelKeys.forEach(key => {
@@ -792,7 +868,7 @@
                 taskText: "Tugasan: Kutip 11 Bintang & Selaraskan Bulan & Matahari Sujud",
                 targetCount: 12, currentCount: 0, offset: { x: 0, z: 0 },
                 bgColor: 0x030712, fogColor: 0x080f26, lightColor: 0x4a69bd,
-                story: "Nabi Yusuf A.S. bermimpi melihat 11 bintang, matahari, dan bulan sujud kepadanya. Ayahanda baginda, Nabi Yaakub A.S., menasihati agar mimpi ini tidak diceritakan kepada saudara-saudara kerana dibatasi cemburu.",
+                story: "Nabi Yusuf A.S. bermimpi melihat 11 bintang, matahari, dan bulan sujud kepadanya. Ayahanda baginda, Nabi Yaakub A.S., menasihati agar mimpi ini tidak diceritakan kepada saudara-saudaranya kerana dibatasi cemburu.",
                 hikmah: "💡 Hikmah: Menjaga rahsia dan kelebihan diri daripada sifat dengki orang lain. (Surah Yusuf: 4-5)"
             },
             {
@@ -846,9 +922,6 @@
 
         let isInGameMode = false;
         let hasPlayedIntroRewind = false;
-        let isPointerLocked = false;
-        let isMouseDown = false;
-        let lastMouseX = 0, lastMouseY = 0;
         let yaw = 0, pitch = 0;
         let joystickActive = false;
         let joystickVector = { x: 0, y: 0 };
@@ -863,6 +936,7 @@
         let direction = new THREE.Vector3();
         let prevTime = performance.now();
 
+        // Fallback Geometries
         function createBedouinTent() {
             const group = new THREE.Group();
             const tent = new THREE.Mesh(new THREE.ConeGeometry(3.2, 3.5, 4), new THREE.MeshStandardMaterial({ color: 0x7e22ce, roughness: 0.8 }));
@@ -953,6 +1027,16 @@
             return group;
         }
 
+        function detectMobile() {
+            isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+            
+            if (isMobile) {
+                document.getElementById('joystick-zone').style.display = 'block';
+                document.getElementById('btn-action-touch').style.display = 'flex';
+                document.getElementById('btn-jump').style.display = 'flex';
+            }
+        }
+
         function init3D() {
             const container = document.getElementById('canvas-container');
 
@@ -970,6 +1054,8 @@
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             container.appendChild(renderer.domElement);
 
+            detectMobile();
+
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
             scene.add(ambientLight);
 
@@ -984,7 +1070,7 @@
 
             buildIsolatedStations();
             setupControls();
-            detectMobile();
+            setupMouseAndTouchLook();
 
             window.addEventListener('resize', onWindowResize);
         }
@@ -1076,33 +1162,25 @@
                     }
                 }
 
-                // Station 3: Caravan Goods
+                // Station 3: Caravan
                 if (idx === 2) {
                     createOrLoadAsset('camel', createCamel, new THREE.Vector3(ox - 5, 0, oz - 4), 3.5, {x:0, y:Math.PI/6, z:0});
                     createOrLoadAsset('camel', createCamel, new THREE.Vector3(ox + 5, 0, oz - 2), 3.5, {x:0, y:-Math.PI/4, z:0});
 
-                    const tradeCoords = [
-                        {x: ox - 7, z: oz + 5},
-                        {x: ox + 6, z: oz + 6},
-                        {x: ox - 4, z: oz - 8},
-                        {x: ox + 8, z: oz - 6}
-                    ];
-
+                    const tradeCoords = [{x: ox - 7, z: oz + 5}, {x: ox + 6, z: oz + 6}, {x: ox - 4, z: oz - 8}, {x: ox + 8, z: oz - 6}];
                     tradeCoords.forEach((coord) => {
                         const goodObj = createOrLoadAsset('tradeGood', () => {
                             const box = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 1.2), new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.8 }));
                             box.position.y = 0.6;
                             return box;
                         }, new THREE.Vector3(coord.x, 0, coord.z), 2.2);
-
                         interactableObjects.push({ mesh: goodObj, level: 3, type: 'trade_good', collected: false, initialY: 0 });
                     });
                 }
 
-                // Station 4: Istana & Penjara (Dungeon Gate & Key)
+                // Station 4: Palace & Dungeon
                 if (idx === 3) {
                     const gateObj = createOrLoadAsset('dungeonGate', createDungeonGate, new THREE.Vector3(ox, 0, oz - 6), 3.5);
-                    
                     createOrLoadAsset('egyptianColumn', createEgyptianPillar, new THREE.Vector3(ox - 8, 0, oz - 4), 5.5);
                     createOrLoadAsset('egyptianColumn', createEgyptianPillar, new THREE.Vector3(ox + 8, 0, oz - 4), 5.5);
 
@@ -1116,30 +1194,26 @@
                     interactableObjects.push({ mesh: gateObj, level: 4, type: 'dungeon_gate', collected: false, initialY: 0 });
                 }
 
-                // Station 5: Granary & Wheat
+                // Station 5: Wheat Field
                 if (idx === 4) {
                     createOrLoadAsset('granary', createGranarySilo, new THREE.Vector3(ox, 0, oz - 8), 5.0);
-
                     for (let w = 0; w < 7; w++) {
                         const wAngle = (w / 7) * Math.PI * 2;
                         const wx = ox + Math.cos(wAngle) * 9;
                         const wz = oz + Math.sin(wAngle) * 9;
-
                         const wheatObj = createOrLoadAsset('wheat', () => {
                             const stalk = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.12, 1.4, 8), new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.6 }));
                             stalk.position.y = 0.7;
                             return stalk;
                         }, new THREE.Vector3(wx, 0, wz), 1.6);
-
                         interactableObjects.push({ mesh: wheatObj, level: 5, type: 'wheat', collected: false, initialY: 0 });
                     }
                 }
 
-                // Station 6: Throne & Penyatuan Keluarga
+                // Station 6: Penyatuan
                 if (idx === 5) {
                     createOrLoadAsset('throne', createRoyalThrone, new THREE.Vector3(ox, 0.8, oz - 8), 4.2);
-
-                    const jacobObj = createOrLoadAsset('father_jacob', () => {
+                    const jacobObj = createOrLoadAsset('fatherJacob', () => {
                         const grp = new THREE.Group();
                         const body = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.5, 1.8, 12), new THREE.MeshStandardMaterial({ color: 0xf8fafc }));
                         body.position.y = 0.9;
@@ -1149,7 +1223,6 @@
                         return grp;
                     }, new THREE.Vector3(ox, 0, oz - 2), 2.2);
 
-                    // Yusuf's Robe
                     const robeObj = createOrLoadAsset('yusufRobe', () => {
                         const robeMesh = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.9, 0.2), new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.5 }));
                         robeMesh.position.y = 1.0;
@@ -1160,6 +1233,90 @@
                     interactableObjects.push({ mesh: jacobObj, level: 6, type: 'father_jacob', collected: false, initialY: 0 });
                 }
             });
+        }
+
+        // KAWALAN PANDANG MOUSE TANPA KLIK (POINTER LOCK FOR PC) & SLIDE FOR PHONE
+        function setupMouseAndTouchLook() {
+            const container = document.getElementById('canvas-container');
+            const touchIndicator = document.getElementById('touchIndicator');
+            let isTouching = false;
+            let lastX = 0, lastY = 0;
+
+            // LOCK POINTER BILA TEKAN SKRIN PADA DESKTOP
+            container.addEventListener('click', () => {
+                if (isInGameMode && !isMobile) {
+                    container.requestPointerLock();
+                }
+            });
+
+            // GERAKKAN MOUSE TANPA TEKAN/KLIK
+            document.addEventListener('mousemove', (e) => {
+                if (!isInGameMode || isMobile) return;
+                if (document.pointerLockElement === container) {
+                    yaw -= e.movementX * 0.002 * sensitivity;
+                    pitch -= e.movementY * 0.002 * sensitivity;
+                    pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, pitch));
+                }
+            });
+
+            // SLIDE SKRIN PADA MOBILE UNTUK MEMUSINGKAN KAMERA 360°
+            container.addEventListener('pointerdown', (e) => {
+                if (!isInGameMode || !isMobile) return;
+                if (e.target.closest('.mobile-btn') || e.target.closest('#joystick-zone')) return;
+
+                isTouching = true;
+                container.setPointerCapture(e.pointerId);
+
+                lastX = e.clientX;
+                lastY = e.clientY;
+
+                touchIndicator.style.left = `${e.clientX}px`;
+                touchIndicator.style.top = `${e.clientY}px`;
+                touchIndicator.style.display = 'block';
+            });
+
+            container.addEventListener('pointermove', (e) => {
+                if (!isTouching || !isInGameMode || !isMobile) return;
+
+                touchIndicator.style.left = `${e.clientX}px`;
+                touchIndicator.style.top = `${e.clientY}px`;
+
+                const dx = e.clientX - lastX;
+                const dy = e.clientY - lastY;
+                lastX = e.clientX;
+                lastY = e.clientY;
+
+                yaw -= dx * 0.004 * sensitivity;
+                pitch -= dy * 0.004 * sensitivity;
+                pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, pitch));
+            });
+
+            const stopTouch = () => {
+                if (!isTouching) return;
+                isTouching = false;
+                touchIndicator.style.display = 'none';
+            };
+
+            container.addEventListener('pointerup', stopTouch);
+            container.addEventListener('pointercancel', stopTouch);
+        }
+
+        // LOMPAT KE LEVEL MANA-MANA PILIHAN PENGGUNA (1-6)
+        function selectAndJumpToLevel(lvlIdx) {
+            currentLevelIndex = lvlIdx;
+            const nextLvl = levels[currentLevelIndex];
+
+            camera.position.set(nextLvl.offset.x, 1.7, nextLvl.offset.z + 8);
+            yaw = 0; pitch = 0;
+            updateEnvironmentAtmosphere();
+
+            toggleModal('modal-levels');
+
+            if (!isInGameMode) {
+                startPlaySequence(true);
+            } else {
+                showNoticeModal(`MULA STESEN ${currentLevelIndex + 1}`, `Anda kini berada di ${nextLvl.name}. Selamat bertualang!`, nextLvl.hikmah);
+            }
         }
 
         function startPlaySequence(isResume = false) {
@@ -1452,9 +1609,7 @@
                     case 'KeyD': case 'ArrowRight': moveRight = true; break;
                     case 'KeyE': interactWithObject(); break;
                     case 'ShiftLeft': isRunning = true; break;
-                    case 'Space': 
-                        if (isGrounded) { velocity.y += 0.13; isGrounded = false; }
-                        break;
+                    case 'Space': doJump(); break;
                 }
             });
 
@@ -1468,64 +1623,27 @@
                 }
             });
 
-            const canvas = renderer.domElement;
+            const btnAction = document.getElementById('btn-action-touch');
+            const btnJump = document.getElementById('btn-jump');
 
-            document.addEventListener('pointerlockchange', () => {
-                isPointerLocked = (document.pointerLockElement === canvas);
+            btnAction.addEventListener('pointerdown', (e) => {
+                e.stopPropagation();
+                interactWithObject();
             });
 
-            document.addEventListener('pointerlockerror', () => {
-                isPointerLocked = false;
-            });
-
-            canvas.addEventListener('mousedown', (e) => {
-                if (!isInGameMode) return;
-                if (e.button === 0) {
-                    isMouseDown = true;
-                    lastMouseX = e.clientX;
-                    lastMouseY = e.clientY;
-                    
-                    if (!isMobile && !isPointerLocked) {
-                        try {
-                            const lockPromise = canvas.requestPointerLock();
-                            if (lockPromise && typeof lockPromise.catch === 'function') {
-                                lockPromise.catch(() => {});
-                            }
-                        } catch (err) {}
-                    }
-                }
-            });
-
-            document.addEventListener('mouseup', () => {
-                isMouseDown = false;
-            });
-
-            document.addEventListener('mousemove', (e) => {
-                if (!isInGameMode) return;
-
-                let dx = 0;
-                let dy = 0;
-
-                if (isPointerLocked) {
-                    dx = e.movementX || 0;
-                    dy = e.movementY || 0;
-                } else if (isMouseDown) {
-                    dx = e.clientX - lastMouseX;
-                    dy = e.clientY - lastMouseY;
-                    lastMouseX = e.clientX;
-                    lastMouseY = e.clientY;
-                } else {
-                    return;
-                }
-
-                if (Math.abs(dx) < 300 && Math.abs(dy) < 300) {
-                    yaw -= dx * 0.0025 * sensitivity;
-                    pitch -= dy * 0.0025 * sensitivity;
-                    pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, pitch));
-                }
+            btnJump.addEventListener('pointerdown', (e) => {
+                e.stopPropagation();
+                doJump();
             });
 
             setupTouchEvents();
+        }
+
+        function doJump() {
+            if (isGrounded) {
+                velocity.y += 0.13;
+                isGrounded = false;
+            }
         }
 
         function setupTouchEvents() {
@@ -1548,15 +1666,15 @@
                     if (touch.identifier === touchId) {
                         let dx = touch.clientX - startX;
                         let dy = touch.clientY - startY;
-                        let dist = Math.min(45, Math.hypot(dx, dy));
+                        let dist = Math.min(60, Math.hypot(dx, dy));
                         let angle = Math.atan2(dy, dx);
 
                         let knobX = Math.cos(angle) * dist;
                         let knobY = Math.sin(angle) * dist;
 
                         knob.style.transform = `translate(${knobX}px, ${knobY}px)`;
-                        joystickVector.x = knobX / 45;
-                        joystickVector.y = knobY / 45;
+                        joystickVector.x = knobX / 60;
+                        joystickVector.y = knobY / 60;
                     }
                 }
             });
@@ -1570,17 +1688,6 @@
 
             window.addEventListener('touchend', resetJoystick);
             window.addEventListener('touchcancel', resetJoystick);
-        }
-
-        function detectMobile() {
-            const hasTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-            isMobile = hasTouch && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            
-            if (isMobile) {
-                document.getElementById('joystick-zone').style.display = 'block';
-                document.getElementById('btn-action-touch').style.display = 'flex';
-                document.getElementById('btn-jump').style.display = 'flex';
-            }
         }
 
         function updatePlayerPhysics(delta) {
@@ -1717,6 +1824,7 @@
 
         function returnToMainMenu() {
             isInGameMode = false;
+            document.exitPointerLock?.();
             document.getElementById('game-hud').classList.add('hidden');
             document.getElementById('crosshair').style.display = 'none';
             document.getElementById('main-menu').classList.remove('hidden');
