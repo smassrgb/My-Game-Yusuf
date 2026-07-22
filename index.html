@@ -1561,7 +1561,7 @@
         }
 
         function interactWithObject() {
-            if (!activeNearbyObject) return;
+            if (!activeNearbyObject || activeNearbyObject.collected) return;
             const curLvl = levels[currentLevelIndex];
 
             if (activeNearbyObject.type === 'well_winch' && !playerInventory.includes('rope_bucket')) {
@@ -1670,11 +1670,9 @@
                 doJump();
             };
 
+            // Menggunakan pointerdown SAHAJA bagi mengelakkan pertindihan acara touchstart
             btnAction.addEventListener('pointerdown', handleBtnAction);
             btnJump.addEventListener('pointerdown', handleBtnJump);
-
-            btnAction.addEventListener('touchstart', handleBtnAction, { passive: false });
-            btnJump.addEventListener('touchstart', handleBtnJump, { passive: false });
 
             setupTouchEvents();
         }
@@ -1715,9 +1713,6 @@
                 btn.addEventListener('pointerdown', startPress);
                 btn.addEventListener('pointerup', endPress);
                 btn.addEventListener('pointercancel', endPress);
-
-                btn.addEventListener('touchstart', startPress, { passive: false });
-                btn.addEventListener('touchend', endPress, { passive: false });
             });
         }
 
