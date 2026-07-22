@@ -48,7 +48,7 @@
         .modal h2 { color: #f1c40f; margin-top: 0; text-align: center; }
         .modal p { font-size: 0.95rem; line-height: 1.5; color: #ddd; }
 
-        input[type="text"], textarea {
+        input[type="text"] {
             width: 100%; padding: 10px; margin: 10px 0; border-radius: 8px;
             border: 1px solid #f1c40f; background: #222; color: #fff; font-size: 1rem;
         }
@@ -176,7 +176,6 @@
             {
                 id: 1,
                 name: "Stesen 1: Visi & Mimpi",
-                env: "space",
                 desc: "Anda berada dalam suasana alam mimpi Nabi Yusuf A.S. Lihat cakerawala di sekeliling. Berapakah jumlah bintang yang dilihat oleh Nabi Yusuf A.S. dalam mimpinya?",
                 answer: "11",
                 unlocked: true,
@@ -241,7 +240,7 @@
         let direction = new THREE.Vector3();
         let prevTime = performance.now();
 
-        // Procedural Audio Synthesizer (Lagu Latar Sintetik mengikut Suasana)
+        // Audio Ambient Synth (Lagu latar buatan sendiri)
         let audioCtx, synthOsc, synthGain;
 
         function initSynthAudio() {
@@ -250,7 +249,7 @@
                 synthOsc = audioCtx.createOscillator();
                 synthGain = audioCtx.createGain();
                 synthOsc.type = 'sine';
-                synthOsc.frequency.setValueAtTime(110, audioCtx.currentTime); // Low ambient hum
+                synthOsc.frequency.setValueAtTime(110, audioCtx.currentTime);
                 synthGain.gain.setValueAtTime(0.05, audioCtx.currentTime);
                 synthOsc.connect(synthGain);
                 synthGain.connect(audioCtx.destination);
@@ -260,7 +259,6 @@
 
         function updateSynthEnvironmentTone(levelIdx) {
             if (!audioCtx) return;
-            // Ubah frekuensi dan bunyi mengikut persekitaran stesen
             const freqs = [110, 87, 130, 164, 146, 220]; 
             synthOsc.frequency.exponentialRampToValueAtTime(freqs[levelIdx] || 110, audioCtx.currentTime + 2);
         }
@@ -308,11 +306,9 @@
         }
 
         function setupEnvironmentAndAssets() {
-            // Environment Utama: Red Sculpted Plains & Space Skybox
+            // Environment Utama dari fail anda
             loadGLB('red_sculpted_plains_-_terrain', { x: 200, y: -4, z: 0 }, { x: 15, y: 15, z: 15 });
             loadGLB('need_some_space', { x: 200, y: 0, z: 0 }, { x: 60, y: 60, z: 60 });
-
-            // Assets Mengikut Stesen
 
             // --- Level 1: Mimpi (Cakerawala) ---
             loadGLB('Sun by Zoe XR - 7diieNtphvD', { x: 0, y: 8, z: -15 }, { x: 3, y: 3, z: 3 });
@@ -351,7 +347,7 @@
             loadGLB('Torch by Quaternius - Gq38E7hFZw', { x: 404, y: 1, z: 2 }, { x: 1, y: 1, z: 1 });
         }
 
-        // Setup Kawalan Keybaord & Mouse (PC FPS)
+        // Setup Controls PC FPS
         function setupControls() {
             document.addEventListener('keydown', (e) => {
                 switch(e.code) {
@@ -361,7 +357,6 @@
                     case 'KeyD': moveRight = true; break;
                     case 'ShiftLeft': isRunning = true; break;
                     case 'Space': if(canJump) velocity.y += 12; canJump = false; break;
-                    case 'KeyE': checkStationInteraction(); break;
                 }
             });
 
@@ -375,7 +370,6 @@
                 }
             });
 
-            // Pointer Lock untuk Kamera PC
             document.body.addEventListener('click', () => {
                 if(document.getElementById('start-overlay').style.display === 'none' &&
                    document.getElementById('task-modal').style.display !== 'block') {
@@ -404,9 +398,7 @@
             const knob = document.getElementById('joystick-knob');
             let touchId = null;
 
-            zone.addEventListener('touchstart', (e) => {
-                touchId = e.changedTouches[0].identifier;
-            });
+            zone.addEventListener('touchstart', (e) => { touchId = e.changedTouches[0].identifier; });
 
             zone.addEventListener('touchmove', (e) => {
                 for (let touch of e.changedTouches) {
@@ -442,18 +434,10 @@
             
             const audio = document.getElementById('bg-music');
             audio.volume = 0.5;
-            audio.play().catch(e => console.log("Autoplay blocked"));
+            audio.play().catch(e => console.log("Autoplay disekat"));
 
             initSynthAudio();
             openTaskModal();
-        }
-
-        function checkStationInteraction() {
-            const cur = levels[currentLevelIndex];
-            const dist = Math.hypot(camera.position.x - cur.pos.x, camera.position.z - cur.pos.z);
-            if(dist < 8) {
-                openTaskModal();
-            }
         }
 
         function openTaskModal() {
@@ -479,7 +463,6 @@
                     currentLevelIndex++;
                     levels[currentLevelIndex].unlocked = true;
                     
-                    // Pindahkan pemain ke lokasi stesen seterusnya secara automatik
                     const nextPos = levels[currentLevelIndex].pos;
                     camera.position.set(nextPos.x, 2, nextPos.z + 5);
                     
@@ -489,7 +472,7 @@
                     alert("🎉 TAHNIAH! Anda telah berjaya menyelesaikan keseluruhan Kembara Nabi Yusuf A.S.!");
                 }
             } else {
-                alert("Jawapan kurang tepat. Sila cuba lagi berdasarkan petunjuk yang diberikan!");
+                alert("Jawapan kurang tepat. Sila cuba lagi!");
             }
         }
 
@@ -537,10 +520,9 @@
             const time = performance.now();
             const delta = (time - prevTime) / 1000;
 
-            // Physics gravity & friction
             velocity.x -= velocity.x * 10.0 * delta;
             velocity.z -= velocity.z * 10.0 * delta;
-            velocity.y -= 9.8 * 3.0 * delta; // Physics Gravity
+            velocity.y -= 9.8 * 3.0 * delta;
 
             direction.z = Number(moveForward) - Number(moveBackward);
             direction.x = Number(moveRight) - Number(moveLeft);
