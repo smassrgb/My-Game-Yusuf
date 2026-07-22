@@ -20,7 +20,24 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 // ==========================================
-// 2. PENCAHAYAAN (LIGHTING)
+// 2. SISTEM AUDIO & MUZIK LATAR
+// ==========================================
+const backgroundMusic = new Audio('assets/background-music.mp3');
+backgroundMusic.loop = true;
+backgroundMusic.volume = 0.5;
+
+let audioStarted = false;
+window.addEventListener('keydown', () => {
+    if (!audioStarted) {
+        backgroundMusic.play().catch(err => {
+            console.log("Autoplay disekat, audio akan bermula selepas interaksi pengguna.");
+        });
+        audioStarted = true;
+    }
+}, { once: true });
+
+// ==========================================
+// 3. PENCAHAYAAN (LIGHTING)
 // ==========================================
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
 scene.add(ambientLight);
@@ -33,7 +50,7 @@ sunLight.shadow.mapSize.height = 2048;
 scene.add(sunLight);
 
 // ==========================================
-// 3. DAFTAR ASET (26 ASSETS)
+// 4. DAFTAR ASET (26 ASSETS)
 // ==========================================
 const ASSET_PATHS = {
     terrain: 'assets/red_sculpted_plains_-_terrain.gltf',
@@ -65,36 +82,97 @@ const ASSET_PATHS = {
 };
 
 const loadedModels = {};
-const collectibles = []; // Menyimpan item yang boleh diambil
-
-// UI SKOR GAMER
-let score = 0;
-const scoreUI = document.createElement('div');
-scoreUI.style.position = 'absolute';
-scoreUI.style.top = '20px';
-scoreUI.style.left = '20px';
-scoreUI.style.color = '#fff';
-scoreUI.style.fontSize = '24px';
-scoreUI.style.fontFamily = 'sans-serif';
-scoreUI.style.fontWeight = 'bold';
-scoreUI.style.textShadow = '2px 2px 4px #000';
-scoreUI.innerText = 'Skor Harta: 0';
-document.body.appendChild(scoreUI);
+let collectibles = []; 
 
 // ==========================================
-// 4. MEMUAT NAIK ASET (LOADING MANAGER)
+// 5. ANTARAMUKA PENGGUNA (UI HUD & SKRIN RESULT)
+// ==========================================
+let score = 0;
+let timeLeft = 60;
+let gameActive = false;
+let timerInterval = null;
+
+// UI Skor & Pemasa
+const uiContainer = document.createElement('div');
+uiContainer.style.position = 'absolute';
+uiContainer.style.top = '20px';
+uiContainer.style.left = '20px';
+uiContainer.style.color = '#fff';
+uiContainer.style.fontSize = '22px';
+uiContainer.style.fontFamily = 'sans-serif';
+uiContainer.style.fontWeight = 'bold';
+uiContainer.style.textShadow = '2px 2px 4px #000';
+uiContainer.innerHTML = `
+    <div id="score-text">Harta Dikumpul: 0 / 4</div>
+    <div id="timer-text" style="color: #ffeb3b;">Masa: 60s</div>
+`;
+document.body.appendChild(uiContainer);
+
+// Butang Mute/Unmute Muzik
+const soundBtn = document.createElement('button');
+soundBtn.innerText = '🔊 Muzik: ON';
+soundBtn.style.position = 'absolute';
+soundBtn.style.bottom = '20px';
+soundBtn.style.right = '20px';
+soundBtn.style.padding = '10px 15px';
+soundBtn.style.fontSize = '14px';
+soundBtn.style.fontWeight = 'bold';
+soundBtn.style.cursor = 'pointer';
+soundBtn.style.background = 'rgba(0, 0, 0, 0.6)';
+soundBtn.style.color = '#fff';
+soundBtn.style.border = '2px solid #fff';
+soundBtn.style.borderRadius = '8px';
+soundBtn.style.zIndex = '1000';
+document.body.appendChild(soundBtn);
+
+let isMuted = false;
+soundBtn.addEventListener('click', () => {
+    isMuted = !isMuted;
+    backgroundMusic.muted = isMuted;
+    soundBtn.innerText = isMuted ? '🔇 Muzik: OFF' : '🔊 Muzik: ON';
+});
+
+// Skrin Menang / Kalah
+const resultScreen = document.createElement('div');
+resultScreen.style.position = 'absolute';
+resultScreen.style.top = '0';
+resultScreen.style.left = '0';
+resultScreen.style.width = '100%';
+resultScreen.style.height = '100%';
+resultScreen.style.background = 'rgba(0, 0, 0, 0.85)';
+resultScreen.style.color = '#fff';
+resultScreen.style.display = 'none';
+resultScreen.style.flexDirection = 'column';
+resultScreen.style.justifyContent = 'center';
+resultScreen.style.alignItems = 'center';
+resultScreen.style.fontFamily = 'sans-serif';
+resultScreen.style.zIndex = '100';
+resultScreen.innerHTML = `
+    <h1 id="result-title" style="font-size: 48px; margin-bottom: 10px;"></h1>
+    <p id="result-msg" style="font-size: 20px; margin-bottom: 30px;"></p>
+    <button id="restart-btn" style="padding: 12px 30px; font-size: 18px; font-weight: bold; cursor: pointer; background: #2196F3; color: white; border: none; border-radius: 8px;">Main Semula</button>
+`;
+document.body.appendChild(resultScreen);
+
+document.getElementById('restart-btn').addEventListener('click', () => {
+    restartGame();
+});
+
+// ==========================================
+// 6. LOADING MANAGER
 // ==========================================
 const loadingManager = new THREE.LoadingManager();
 const loadingScreen = document.getElementById('loading-screen');
 
 loadingManager.onProgress = (url, itemsLoaded, itemsTotal) => {
     const progress = Math.round((itemsLoaded / itemsTotal) * 100);
-    if (loadingScreen) loadingScreen.innerText = `Memuatkan Aset... (${progress}%)`;
+    if (loadingScreen) loadingScreen.innerText = `Memuatkan Aset Game... (${progress}%)`;
 };
 
 loadingManager.onLoad = () => {
     if (loadingScreen) loadingScreen.style.display = 'none';
     initGameWorld();
+    startGameTimer();
 };
 
 const gltfLoader = new THREE.GLTFLoader(loadingManager);
@@ -112,12 +190,11 @@ Object.keys(ASSET_PATHS).forEach((key) => {
 });
 
 // ==========================================
-// 5. KAWALAN PEMAIN, LOMPAT, & SPRINT
+// 7. KAWALAN PEMAIN (MOVEMENT & JUMP)
 // ==========================================
 let playerMesh = null;
 const keys = { forward: false, backward: false, left: false, right: false, sprint: false };
 
-// Fizik Lompatan & Kelajuan
 let velocityY = 0;
 let isGrounded = true;
 const gravity = -0.015;
@@ -133,8 +210,7 @@ window.addEventListener('keydown', (e) => {
     if (e.code === 'KeyD' || e.code === 'ArrowRight') keys.right = true;
     if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') keys.sprint = true;
     
-    // FUNGSI LOMPAT (Spacebar)
-    if (e.code === 'Space' && isGrounded) {
+    if (e.code === 'Space' && isGrounded && gameActive) {
         velocityY = jumpStrength;
         isGrounded = false;
     }
@@ -149,7 +225,7 @@ window.addEventListener('keyup', (e) => {
 });
 
 // ==========================================
-// 6. PENYUSUNAN DUNIA & HARTA KARUN
+// 8. WORLD SPAWNING
 // ==========================================
 function spawnProp(modelKey, x, z, scale = 1, rotationY = 0, isCollectable = false) {
     if (!loadedModels[modelKey]) return;
@@ -162,12 +238,13 @@ function spawnProp(modelKey, x, z, scale = 1, rotationY = 0, isCollectable = fal
     if (isCollectable) {
         collectibles.push(instance);
     }
+    return instance;
 }
 
 function initGameWorld() {
     if (loadedModels['terrain']) scene.add(loadedModels['terrain']);
 
-    // Set Watak
+    // Set Watak Utama
     if (loadedModels['camel']) {
         playerMesh = loadedModels['camel'];
     } else {
@@ -185,13 +262,13 @@ function initGameWorld() {
     spawnProp('dungeon', 0, 40, 1);
     spawnProp('well', 5, -10, 1);
 
-    // BARANGAN HARTA KARUN (Boleh Dikutip Untuk Tambah Skor)
+    // 4 Harta Karun Misi
     spawnProp('chest', 7, -10, 1, 0, true);
     spawnProp('chalice', 0, -37, 1, 0, true);
-    spawnProp('star', 15, 10, 1, 0, true);
-    spawnProp('star', -15, 10, 1, 0, true);
+    spawnProp('star', 20, 15, 1, 0, true);
+    spawnProp('star', -20, 15, 1, 0, true);
 
-    // Tumbuhan & Prop Lain
+    // Hiasan Peta
     for (let i = 0; i < 15; i++) {
         const x = (Math.random() - 0.5) * 80;
         const z = (Math.random() - 0.5) * 80;
@@ -200,26 +277,80 @@ function initGameWorld() {
             spawnProp('cactus', x + 2, z + 2, 0.8);
         }
     }
+
+    gameActive = true;
 }
 
 // ==========================================
-// 7. PERGERAKAN & SAKSI INTERAKSI (LOOP)
+// 9. LOGIK PEMASA & RESTART
+// ==========================================
+function startGameTimer() {
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+        if (!gameActive) return;
+        timeLeft--;
+        document.getElementById('timer-text').innerText = `Masa: ${timeLeft}s`;
+
+        if (timeLeft <= 0) {
+            endGame(false);
+        }
+    }, 1000);
+}
+
+function endGame(isWin) {
+    gameActive = false;
+    clearInterval(timerInterval);
+    resultScreen.style.display = 'flex';
+
+    if (isWin) {
+        document.getElementById('result-title').innerText = "TAHNIAH! ANDA MENANG! 🎉";
+        document.getElementById('result-title').style.color = "#4CAF50";
+        document.getElementById('result-msg').innerText = "Anda berjaya mengumpul kesemua harta karun tepat pada waktunya!";
+    } else {
+        document.getElementById('result-title').innerText = "GAME OVER! ⏳";
+        document.getElementById('result-title').style.color = "#F44336";
+        document.getElementById('result-msg').innerText = "Masa telah tamat sebelum anda sempat mengumpul kesemua harta karun.";
+    }
+}
+
+function restartGame() {
+    score = 0;
+    timeLeft = 60;
+    document.getElementById('score-text').innerText = `Harta Dikumpul: 0 / 4`;
+    document.getElementById('timer-text').innerText = `Masa: 60s`;
+    resultScreen.style.display = 'none';
+
+    collectibles.forEach(item => scene.remove(item));
+    collectibles = [];
+
+    spawnProp('chest', 7, -10, 1, 0, true);
+    spawnProp('chalice', 0, -37, 1, 0, true);
+    spawnProp('star', 20, 15, 1, 0, true);
+    spawnProp('star', -20, 15, 1, 0, true);
+
+    if (playerMesh) {
+        playerMesh.position.set(0, 0, 0);
+        playerMesh.rotation.set(0, 0, 0);
+    }
+
+    gameActive = true;
+    startGameTimer();
+}
+
+// ==========================================
+// 10. GAME LOOP
 // ==========================================
 function updatePlayerMovement() {
-    if (!playerMesh) return;
+    if (!playerMesh || !gameActive) return;
 
-    // Tentukan Kelajuan (Sprint / Biasa)
     const currentSpeed = keys.sprint ? sprintSpeed : baseSpeed;
 
-    // Putaran
     if (keys.left) playerMesh.rotation.y += turnSpeed;
     if (keys.right) playerMesh.rotation.y -= turnSpeed;
 
-    // Maju / Undur
     if (keys.forward) playerMesh.translateZ(currentSpeed);
     if (keys.backward) playerMesh.translateZ(-currentSpeed);
 
-    // Fizik Graviti & Lompatan
     playerMesh.position.y += velocityY;
     if (!isGrounded) {
         velocityY += gravity;
@@ -230,21 +361,24 @@ function updatePlayerMovement() {
         }
     }
 
-    // SEMAK INTERAKSI DENGAN HARTA KARUN (Collision Detection)
+    // Interaction Check
     for (let i = collectibles.length - 1; i >= 0; i--) {
         const item = collectibles[i];
         const distance = playerMesh.position.distanceTo(item.position);
         
-        // Jika pemain dekat dengan harta karun (< 2 unit)
         if (distance < 2.0) {
-            scene.remove(item); // Hilangkan harta karun dari map
+            scene.remove(item);
             collectibles.splice(i, 1);
-            score += 10; // Tambah 10 Skor
-            scoreUI.innerText = `Skor Harta: ${score}`;
+            score++;
+            document.getElementById('score-text').innerText = `Harta Dikumpul: ${score} / 4`;
+
+            if (score >= 4) {
+                endGame(true);
+            }
         }
     }
 
-    // Kamera Mengekori Pemain
+    // Camera follow
     const cameraOffset = new THREE.Vector3(0, 5, -10);
     cameraOffset.applyQuaternion(playerMesh.quaternion);
     
@@ -252,9 +386,6 @@ function updatePlayerMovement() {
     camera.lookAt(playerMesh.position.clone().add(new THREE.Vector3(0, 1.5, 0)));
 }
 
-// ==========================================
-// 8. GAME LOOP
-// ==========================================
 function animate() {
     requestAnimationFrame(animate);
     updatePlayerMovement();
