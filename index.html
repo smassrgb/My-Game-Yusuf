@@ -19,10 +19,10 @@
 
         /* Glassmorphism Styling */
         .glass-panel {
-            background: rgba(15, 23, 42, 0.82);
+            background: rgba(15, 23, 42, 0.85);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(241, 196, 15, 0.3);
+            border: 1px solid rgba(241, 196, 15, 0.35);
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
 
@@ -64,6 +64,29 @@
             color: #ffffff;
             transform: translateY(-3px) scale(1.02);
             box-shadow: 0 10px 25px rgba(211, 84, 0, 0.5);
+        }
+
+        /* Compass Visual Widget */
+        .compass-widget {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(15, 23, 42, 0.9);
+            border: 2px solid #f1c40f;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 12px rgba(241, 196, 15, 0.5);
+        }
+        .compass-arrow {
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-bottom: 18px solid #ef4444;
+            transform-origin: 50% 100%;
+            transition: transform 0.1s linear;
         }
 
         /* Rewind Overlay Screen */
@@ -137,7 +160,6 @@
 
     <!-- MAIN MENU OVERLAY -->
     <div id="main-menu" class="absolute inset-0 z-40 flex flex-col items-center justify-between p-6 md:p-12 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-slate-950/80">
-        <!-- Top Branding Header -->
         <div class="text-center mt-6 animate-fade-in">
             <div class="inline-block px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-400/30 text-amber-400 text-xs font-bold tracking-widest uppercase mb-3">
                 🕌 Ahsanul Qasas • Kisah Terbaik Al-Quran
@@ -150,10 +172,15 @@
             </p>
         </div>
 
-        <!-- Central Action Menu Box -->
         <div class="w-full max-w-xs space-y-3 glass-panel p-6 rounded-2xl border-amber-500/40 animate-fade-in my-auto">
-            <button id="btn-play" class="btn-menu w-full pulse-gold text-lg" onclick="startPlaySequence()">
-                <span>▶</span> <span>MAIN PERMAINAN</span>
+            <button id="btn-play" class="btn-menu w-full pulse-gold text-lg" onclick="startPlaySequence(false)">
+                <span>▶</span> <span id="btn-play-text">MAIN PERMAINAN</span>
+            </button>
+            <button id="btn-resume" class="btn-menu w-full text-emerald-400 border-emerald-500/50 hidden" onclick="startPlaySequence(true)">
+                <span>⏯</span> <span>SAMBUNG PERMAINAN</span>
+            </button>
+            <button id="btn-models" class="btn-menu w-full text-amber-300" onclick="toggleModal('modal-models')">
+                <span>🎨</span> <span>TUKAR MODEL 3D</span>
             </button>
             <button id="btn-settings" class="btn-menu w-full" onclick="toggleModal('modal-settings')">
                 <span>⚙</span> <span>TETAPAN</span>
@@ -166,7 +193,6 @@
             </button>
         </div>
 
-        <!-- Footer Info -->
         <div class="text-center text-xs text-slate-400 font-medium pb-2">
             Versi Penambahbaikan 3D • Dibangunkan untuk Pembelajaran Agama & Moral Interaktif
         </div>
@@ -185,17 +211,20 @@
 
     <!-- IN-GAME HUD OVERLAY -->
     <div id="game-hud" class="absolute inset-0 z-30 pointer-events-none hidden flex-col justify-between p-4 md:p-6">
-        <!-- Top HUD Bar -->
         <div class="flex justify-between items-start gap-4">
-            <!-- Level & Task Card -->
             <div class="glass-panel p-4 rounded-2xl pointer-events-auto border-amber-500/40 max-w-md w-full">
                 <div class="flex justify-between items-center mb-1">
                     <span id="hud-station-badge" class="bg-amber-600 text-white font-extrabold text-[10px] sm:text-xs px-2.5 py-1 rounded-md uppercase tracking-wider">
                         STESEN 1
                     </span>
-                    <!-- Compass Header -->
-                    <div class="text-xs font-bold text-amber-300 flex items-center gap-1">
-                        🧭 <span id="compass-dir">UTARA (0°)</span>
+                    <div class="text-xs font-bold text-amber-300 flex items-center gap-2">
+                        <div class="compass-widget">
+                            <div id="compass-needle" class="compass-arrow"></div>
+                        </div>
+                        <div class="flex flex-col">
+                            <span id="compass-dir" class="text-[10px] text-amber-400/80">Arah Misi</span>
+                            <span id="compass-deg" class="text-xs font-black text-amber-300">0°</span>
+                        </div>
                     </div>
                 </div>
                 <h2 id="hud-station-title" class="text-lg sm:text-xl font-extrabold text-amber-400 font-cinzel leading-tight mt-1">
@@ -206,15 +235,16 @@
                 </div>
             </div>
 
-            <!-- Top Right Action Controls -->
             <div class="flex gap-2 pointer-events-auto">
-                <!-- Inventory Quick Bar -->
                 <div class="glass-panel p-2 rounded-2xl flex gap-1.5 items-center hidden sm:flex">
                     <div id="inv-slot-1" class="inventory-slot" title="Tali & Baldi">🪣</div>
                     <div id="inv-slot-2" class="inventory-slot" title="Kunci Emas">🔑</div>
                     <div id="inv-slot-3" class="inventory-slot" title="Baju Yusuf">🥋</div>
                 </div>
 
+                <button class="glass-panel p-3 rounded-2xl text-amber-300 font-bold hover:bg-slate-800/80 transition" onclick="toggleModal('modal-models')" title="Tukar Model 3D">
+                    🎨
+                </button>
                 <button id="btn-toggle-story" class="glass-panel p-3 rounded-2xl text-amber-400 font-bold hover:bg-slate-800/80 transition" onclick="toggleStoryBox()">
                     📜 Info Kisah
                 </button>
@@ -230,14 +260,11 @@
             </div>
         </div>
 
-        <!-- Interactive Action Prompt -->
         <div id="interaction-prompt" class="self-center glass-panel px-6 py-3 rounded-full border-2 border-amber-400 text-amber-300 font-extrabold text-sm sm:text-base tracking-wide pulse-gold hidden mb-20 pointer-events-none text-center">
             Tekan [E] atau Sentuh untuk Interaksi
         </div>
 
-        <!-- Bottom Story Dialogue Box & Toggle Button -->
         <div class="flex flex-col items-center pointer-events-auto w-full max-w-2xl mx-auto mb-2">
-            <!-- Reopen Floating Button when Story Box is hidden -->
             <button id="btn-reopen-story" onclick="toggleStoryBox()" class="glass-panel px-4 py-2 rounded-full border border-amber-400/50 text-amber-300 font-bold text-xs hover:bg-slate-800/90 transition hidden mb-2 shadow-lg flex items-center gap-2">
                 📜 Buka Info Kisah Stesen
             </button>
@@ -284,14 +311,6 @@
                         <li><strong class="text-amber-400">Stesen 6 (Penyatuan & Kemaafan):</strong> Surah Yusuf ayat 90-100 • Pengajaran sifat pemaaf memadamkan dendam lama.</li>
                     </ul>
                 </div>
-
-                <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800">
-                    <h4 class="font-bold text-amber-300 text-base mb-1">🕹️ Cara Bermain:</h4>
-                    <p class="text-xs sm:text-sm">
-                        • <strong>Komputer:</strong> Gunakan butang <code>WASD</code> / Anak Panah untuk bergerak. Seret tetikus untuk memandang sekeliling. Tekan <code>E</code> untuk mengambil objek / berinteraksi.<br>
-                        • <strong>Telefon Bimbit:</strong> Gunakan Joystick analog di sebelah kiri skrin dan seret jari di kawasan kanan untuk menggerakkan kamera. Tekan butang AMBIL pada skrin.
-                    </p>
-                </div>
             </div>
 
             <button onclick="toggleModal('modal-notes')" class="btn-menu w-full mt-6">Tutup Nota</button>
@@ -316,41 +335,186 @@
                 <input type="range" id="slider-sens" min="0.4" max="2.5" step="0.1" value="1.0" onchange="updateSensitivity()" class="w-full accent-amber-400 cursor-pointer">
             </div>
 
-            <div>
-                <label class="block text-amber-300 text-xs font-bold uppercase mb-2">🖥️ Mod Paparan:</label>
-                <button onclick="toggleFullscreen()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 rounded-xl text-sm transition border border-slate-600">
-                    ⛶ Tukar Mod Skrin Penuh (Fullscreen)
-                </button>
-            </div>
-
-            <button onclick="showAssetManagerModal()" class="w-full bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 font-bold py-2.5 rounded-xl text-xs transition border border-amber-500/50">
-                📦 Buka Pengurus Asset 3D GLB
-            </button>
-
             <button onclick="toggleModal('modal-settings')" class="btn-menu w-full mt-4">Simpan & Tutup</button>
         </div>
     </div>
 
-    <!-- MODAL: ASSET MANAGER (GLB JSDELIVR CDN INTEGRATION) -->
-    <div id="modal-assets" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md hidden flex items-center justify-center p-4">
-        <div class="glass-panel w-full max-w-xl max-h-[85vh] rounded-3xl p-6 overflow-y-auto border-amber-500/40 relative animate-fade-in">
-            <h3 class="font-cinzel text-xl font-bold text-amber-400 mb-2">📦 Pengurus Asset 3D GLB (jsDelivr CDN)</h3>
-            <p class="text-xs text-slate-400 mb-4">
-                Pautan model di bawah menggunakan <code>cdn.jsdelivr.net</code> yang menyelesaikan masalah CORS dan kerosakan MIME type GitHub.
+    <!-- MODAL: TUKAR MODEL 3D (GLB MODEL MANAGER) -->
+    <div id="modal-models" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-2xl rounded-3xl p-6 border-amber-500/40 relative animate-fade-in space-y-4 max-h-[88vh] overflow-y-auto">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-700 sticky top-0 bg-slate-950/90 z-10 backdrop-blur-md pt-1">
+                <div>
+                    <h3 class="font-cinzel text-xl font-bold text-amber-400">🎨 Tukar Semua Model 3D (Custom GLB)</h3>
+                    <p class="text-[11px] text-slate-400">Kemaskini fail .glb bagi kesemua 17 objek di dalam 6 stesen kembara</p>
+                </div>
+                <button onclick="toggleModal('modal-models')" class="text-slate-400 hover:text-white text-xl font-bold">✕</button>
+            </div>
+
+            <p class="text-xs text-slate-300 leading-relaxed">
+                Anda boleh memasukkan <strong>URL fail .glb</strong> baharu atau memuat naik fail dari komputer anda untuk sebarang objek 3D di bawah:
             </p>
 
-            <div id="asset-inputs-list" class="space-y-3 text-xs">
-                <!-- Dynamic Asset Inputs Populated by JS -->
+            <div class="space-y-5">
+                <!-- STESEN 1 -->
+                <div class="border border-amber-500/30 rounded-2xl p-3.5 bg-slate-900/60">
+                    <h4 class="text-xs font-bold text-amber-400 font-cinzel mb-3 flex items-center gap-2">
+                        <span>🌟</span> STESEN 1: MIMPI 11 BINTANG
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+                            <label class="block text-amber-300 text-[11px] font-bold mb-1">⭐ Bintang (Star):</label>
+                            <input type="text" id="input-model-star" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
+                            <button type="button" onclick="document.getElementById('file-model-star').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
+                            <input type="file" id="file-model-star" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('star', this)">
+                        </div>
+                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+                            <label class="block text-amber-300 text-[11px] font-bold mb-1">☀️ Matahari (Sun):</label>
+                            <input type="text" id="input-model-sun" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
+                            <button type="button" onclick="document.getElementById('file-model-sun').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
+                            <input type="file" id="file-model-sun" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('sun', this)">
+                        </div>
+                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+                            <label class="block text-amber-300 text-[11px] font-bold mb-1">🌙 Bulan (Moon):</label>
+                            <input type="text" id="input-model-moon" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
+                            <button type="button" onclick="document.getElementById('file-model-moon').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
+                            <input type="file" id="file-model-moon" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('moon', this)">
+                        </div>
+                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+                            <label class="block text-amber-300 text-[11px] font-bold mb-1">⛺ Khemah (Tent):</label>
+                            <input type="text" id="input-model-tent" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
+                            <button type="button" onclick="document.getElementById('file-model-tent').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
+                            <input type="file" id="file-model-tent" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('tent', this)">
+                        </div>
+                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 md:col-span-2">
+                            <label class="block text-amber-300 text-[11px] font-bold mb-1">🌴 Pokok Kurma (Palm Tree):</label>
+                            <input type="text" id="input-model-palmTree" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
+                            <button type="button" onclick="document.getElementById('file-model-palmTree').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
+                            <input type="file" id="file-model-palmTree" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('palmTree', this)">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STESEN 2 -->
+                <div class="border border-amber-500/30 rounded-2xl p-3.5 bg-slate-900/60">
+                    <h4 class="text-xs font-bold text-amber-400 font-cinzel mb-3 flex items-center gap-2">
+                        <span>🛢️</span> STESEN 2: PERIGI TUA PADANG PASIR
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+                            <label class="block text-amber-300 text-[11px] font-bold mb-1">🧱 Perigi (Well):</label>
+                            <input type="text" id="input-model-well" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
+                            <button type="button" onclick="document.getElementById('file-model-well').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
+                            <input type="file" id="file-model-well" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('well', this)">
+                        </div>
+                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+                            <label class="block text-amber-300 text-[11px] font-bold mb-1">🪣 Tali & Baldi (Bucket/Rope):</label>
+                            <input type="text" id="input-model-bucketRope" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
+                            <button type="button" onclick="document.getElementById('file-model-bucketRope').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
+                            <input type="file" id="file-model-bucketRope" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('bucketRope', this)">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STESEN 3 -->
+                <div class="border border-amber-500/30 rounded-2xl p-3.5 bg-slate-900/60">
+                    <h4 class="text-xs font-bold text-amber-400 font-cinzel mb-3 flex items-center gap-2">
+                        <span>🐪</span> STESEN 3: KAFILAH MUSAFIR & DAGANGAN
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+                            <label class="block text-amber-300 text-[11px] font-bold mb-1">🐫 Unta (Camel):</label>
+                            <input type="text" id="input-model-camel" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
+                            <button type="button" onclick="document.getElementById('file-model-camel').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
+                            <input type="file" id="file-model-camel" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('camel', this)">
+                        </div>
+                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+                            <label class="block text-amber-300 text-[11px] font-bold mb-1">📦 Barang Dagangan (Trade Goods):</label>
+                            <input type="text" id="input-model-tradeGood" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
+                            <button type="button" onclick="document.getElementById('file-model-tradeGood').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
+                            <input type="file" id="file-model-tradeGood" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('tradeGood', this)">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STESEN 4 -->
+                <div class="border border-amber-500/30 rounded-2xl p-3.5 bg-slate-900/60">
+                    <h4 class="text-xs font-bold text-amber-400 font-cinzel mb-3 flex items-center gap-2">
+                        <span>🏛️</span> STESEN 4: ISTANA MESIR & PENJARA
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+                            <label class="block text-amber-300 text-[11px] font-bold mb-1">🏛️ Tiang Mesir (Pillar):</label>
+                            <input type="text" id="input-model-egyptianColumn" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
+                            <button type="button" onclick="document.getElementById('file-model-egyptianColumn').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
+                            <input type="file" id="file-model-egyptianColumn" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('egyptianColumn', this)">
+                        </div>
+                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+                            <label class="block text-amber-300 text-[11px] font-bold mb-1">🚪 Gate Penjara (Dungeon Gate):</label>
+                            <input type="text" id="input-model-dungeonGate" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
+                            <button type="button" onclick="document.getElementById('file-model-dungeonGate').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
+                            <input type="file" id="file-model-dungeonGate" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('dungeonGate', this)">
+                        </div>
+                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+                            <label class="block text-amber-300 text-[11px] font-bold mb-1">🔑 Kunci Emas (Golden Key):</label>
+                            <input type="text" id="input-model-goldenKey" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
+                            <button type="button" onclick="document.getElementById('file-model-goldenKey').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
+                            <input type="file" id="file-model-goldenKey" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('goldenKey', this)">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STESEN 5 -->
+                <div class="border border-amber-500/30 rounded-2xl p-3.5 bg-slate-900/60">
+                    <h4 class="text-xs font-bold text-amber-400 font-cinzel mb-3 flex items-center gap-2">
+                        <span>🌾</span> STESEN 5: GUDANG GANDUM & TUAIAN
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+                            <label class="block text-amber-300 text-[11px] font-bold mb-1">🏠 Gudang Silo (Granary):</label>
+                            <input type="text" id="input-model-granary" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
+                            <button type="button" onclick="document.getElementById('file-model-granary').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
+                            <input type="file" id="file-model-granary" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('granary', this)">
+                        </div>
+                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+                            <label class="block text-amber-300 text-[11px] font-bold mb-1">🌾 Gandum (Wheat Field):</label>
+                            <input type="text" id="input-model-wheat" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
+                            <button type="button" onclick="document.getElementById('file-model-wheat').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
+                            <input type="file" id="file-model-wheat" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('wheat', this)">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STESEN 6 -->
+                <div class="border border-amber-500/30 rounded-2xl p-3.5 bg-slate-900/60">
+                    <h4 class="text-xs font-bold text-amber-400 font-cinzel mb-3 flex items-center gap-2">
+                        <span>👑</span> STESEN 6: PENYATUAN KELUARGA
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+                            <label class="block text-amber-300 text-[11px] font-bold mb-1">🪑 Takhta Diraja (Throne):</label>
+                            <input type="text" id="input-model-throne" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
+                            <button type="button" onclick="document.getElementById('file-model-throne').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
+                            <input type="file" id="file-model-throne" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('throne', this)">
+                        </div>
+                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+                            <label class="block text-amber-300 text-[11px] font-bold mb-1">🥋 Baju Nabi Yusuf (Robe):</label>
+                            <input type="text" id="input-model-yusufRobe" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
+                            <button type="button" onclick="document.getElementById('file-model-yusufRobe').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
+                            <input type="file" id="file-model-yusufRobe" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('yusufRobe', this)">
+                        </div>
+                        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+                            <label class="block text-amber-300 text-[11px] font-bold mb-1">👨‍🦳 Nabi Yaakub (Jacob):</label>
+                            <input type="text" id="input-model-father_jacob" class="w-full bg-slate-900 text-xs text-slate-200 p-2 rounded-lg border border-slate-700 mb-1.5" placeholder="URL fail .glb...">
+                            <button type="button" onclick="document.getElementById('file-model-father_jacob').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-amber-300 px-2 py-1 rounded-lg text-[11px] font-bold">📁 Muat Naik Fail GLB</button>
+                            <input type="file" id="file-model-father_jacob" accept=".glb,.gltf" class="hidden" onchange="handleFileUpload('father_jacob', this)">
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div class="flex gap-3 mt-6">
-                <button onclick="applyAssetChanges()" class="btn-menu flex-1 bg-gradient-to-r from-amber-600 to-orange-600 text-white">
-                    💾 Kemaskini Asset
-                </button>
-                <button onclick="toggleModal('modal-assets')" class="px-5 py-3 rounded-xl bg-slate-800 text-slate-300 font-bold hover:bg-slate-700">
-                    Tutup
-                </button>
-            </div>
+            <button onclick="saveAndApplyCustomModels()" class="btn-menu w-full mt-4 text-base font-bold">
+                💾 Simpan & Kemaskini Kesemua Model 3D
+            </button>
         </div>
     </div>
 
@@ -360,7 +524,7 @@
             <h3 id="notice-title" class="font-cinzel text-2xl font-black text-amber-400">Tahniah!</h3>
             <p id="notice-body" class="text-slate-300 text-sm leading-relaxed"></p>
             <div id="notice-hikmah-box" class="bg-amber-500/10 border-l-4 border-amber-400 p-3 text-left rounded-r-xl text-amber-300 text-xs italic font-semibold"></div>
-            <button onclick="toggleModal('modal-notice')" class="btn-menu w-full mt-2">Teruskan Kembara ➔</button>
+            <button id="notice-btn" onclick="handleNoticeClose()" class="btn-menu w-full mt-2">Teruskan Kembara ➔</button>
         </div>
     </div>
 
@@ -374,7 +538,6 @@
         <source src="https://cdn.jsdelivr.net/gh/smassrgb/My-Game-Yusuf@main/background%20music.mp3" type="audio/mp3">
     </audio>
 
-    <!-- JAVASCRIPT LOGIC -->
     <script>
         // ==========================================
         // 1. SOUND ENGINE (Synthesized Audio & BGM)
@@ -464,39 +627,43 @@
         }
         const soundEngine = new SoundEngine();
 
-        // ==========================================
-        // 2. ASSET MANAGER & JSDELIVR CDN URLs
-        // ==========================================
         const CDN_REPO_URL = "https://cdn.jsdelivr.net/gh/smassrgb/My-Game-Yusuf@main/";
 
+        // Penggabungan Pautan Model 3D Direct Raw GitHub ke Tatasusunan Aset GITHUB_MODELS
         let GITHUB_MODELS = {
             star: CDN_REPO_URL + encodeURIComponent("Star by Poly by Google - 9NXf-SDxJny.glb"),
             sun: CDN_REPO_URL + encodeURIComponent("Sun by Zoe XR - 7diieNtphvD.glb"),
             moon: CDN_REPO_URL + encodeURIComponent("Moon by Zoe XR - 10VNaCg1jYM.glb"),
-            tent: CDN_REPO_URL + encodeURIComponent("need_some_space.glb"),
+            // Model 1: Khemah (Tent)
+            tent: 'https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/Tent%20by%20J-Toastie%20-%200LnXUwcQzk.glb',
             palmTree: CDN_REPO_URL + encodeURIComponent("Palm tree by Poly by Google - 1l79utpMAy0.glb"),
             well: CDN_REPO_URL + encodeURIComponent("Well by Quaternius - QlqncKYxXb.glb"),
-            bucketRope: CDN_REPO_URL + encodeURIComponent("Bag Open by Quaternius - rJuZexcuhU.glb"),
+            // Model 2: Baldi & Tali (Bucket and Rope)
+            bucketRope: 'https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/Bucket%20by%20Quaternius%20-%20tKTttwROq7.glb',
             camel: CDN_REPO_URL + encodeURIComponent("Camel by Poly by Google - cyuwV4fg0B1.glb"),
             tradeGood: CDN_REPO_URL + encodeURIComponent("Crate by Quaternius - 3OEFd1AWfa.glb"),
             egyptianColumn: CDN_REPO_URL + encodeURIComponent("Pillar by Kay Lousberg - 1nt8n3rVKU.glb"),
-            jailDoor: CDN_REPO_URL + encodeURIComponent("Jail by Poly by Google - bF8mr05ofaY.glb"),
-            goldenKey: CDN_REPO_URL + encodeURIComponent("Chest by Quaternius - eEcIqgJzJ1.glb"),
+            dungeonGate: "", // Custom static stone archway gate
+            // Model 3: Kunci Emas (Golden Key)
+            goldenKey: 'https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/Key%20by%20Quaternius%20-%20bg6e1lfNsO.glb',
             granary: CDN_REPO_URL + encodeURIComponent("Storage House by Quaternius - d2ZQWcuhwR.glb"),
             wheat: CDN_REPO_URL + encodeURIComponent("Field of wheat by Poly by Google - cNX9BRNG6ep.glb"),
-            throne: CDN_REPO_URL + encodeURIComponent("royal_throne_by_modenese.glb"),
-            yusufRobe: CDN_REPO_URL + encodeURIComponent("robe_cloth_for_iclone_and_character_creator.glb")
+            // Model 4: Takhta Diraja (Royal Throne)
+            throne: 'https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/royal_throne_by_modenese.glb',
+            yusufRobe: CDN_REPO_URL + encodeURIComponent("robe_cloth_for_iclone_and_character_creator.glb"),
+            // Model 5: Nabi Yaakub / Jacob
+            father_jacob: 'https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/Glasses%20by%20iPoly3D%20-%20crbuIoq2dO.glb'
         };
 
         const gltfLoader = new THREE.GLTFLoader();
         const loadedAssetGroups = [];
 
-        function createOrLoadAsset(modelKey, fallbackFn, position, scale = {x:1, y:1, z:1}, rotation = {x:0, y:0, z:0}) {
+        // Advanced Asset Creator with Bounding-Box Auto Scale Normalization
+        function createOrLoadAsset(modelKey, fallbackFn, position, targetSize = null, rotation = {x:0, y:0, z:0}) {
             const parentGroup = new THREE.Group();
             parentGroup.position.copy(position);
             parentGroup.rotation.set(rotation.x, rotation.y, rotation.z);
-            parentGroup.scale.set(scale.x, scale.y, scale.z);
-            parentGroup.userData = { modelKey, fallbackFn, position, scale, rotation };
+            parentGroup.userData = { modelKey, fallbackFn, position, targetSize, rotation };
 
             const modelUrl = GITHUB_MODELS[modelKey];
             const fallbackMesh = fallbackFn();
@@ -516,11 +683,26 @@
                                 child.receiveShadow = true;
                             }
                         });
+
+                        // Auto Normalization of Size via Bounding Box
+                        if (targetSize) {
+                            const bbox = new THREE.Box3().setFromObject(loadedMesh);
+                            const size = new THREE.Vector3();
+                            bbox.getSize(size);
+                            const maxDim = Math.max(size.x, size.y, size.z);
+                            if (maxDim > 0) {
+                                const scaleFactor = targetSize / maxDim;
+                                loadedMesh.scale.set(scaleFactor, scaleFactor, scaleFactor);
+                            }
+                            const bbox2 = new THREE.Box3().setFromObject(loadedMesh);
+                            loadedMesh.position.y -= bbox2.min.y;
+                        }
+
                         parentGroup.add(loadedMesh);
                     },
                     undefined,
                     (err) => {
-                        console.warn(`[Asset CDN Fallback] Menggunakan model binaan untuk '${modelKey}'`, err);
+                        console.warn(`[Asset CDN Fallback] Fallback model used for '${modelKey}'`, err);
                     }
                 );
             }
@@ -530,16 +712,87 @@
             return parentGroup;
         }
 
-        // ==========================================
-        // 3. GAME LEVELS & STORY DATA
-        // ==========================================
+        // Function to reload model asset dynamically from UI Custom Model Manager
+        function reloadAssetGroup(modelKey, newUrl) {
+            GITHUB_MODELS[modelKey] = newUrl;
+            loadedAssetGroups.forEach(group => {
+                if (group.userData && group.userData.modelKey === modelKey) {
+                    const { targetSize } = group.userData;
+                    gltfLoader.load(newUrl, (gltf) => {
+                        while (group.children.length > 0) {
+                            group.remove(group.children[0]);
+                        }
+                        const loadedMesh = gltf.scene;
+                        loadedMesh.traverse((child) => {
+                            if (child.isMesh) {
+                                child.castShadow = true;
+                                child.receiveShadow = true;
+                            }
+                        });
+                        if (targetSize) {
+                            const bbox = new THREE.Box3().setFromObject(loadedMesh);
+                            const size = new THREE.Vector3();
+                            bbox.getSize(size);
+                            const maxDim = Math.max(size.x, size.y, size.z);
+                            if (maxDim > 0) {
+                                const scaleFactor = targetSize / maxDim;
+                                loadedMesh.scale.set(scaleFactor, scaleFactor, scaleFactor);
+                            }
+                            const bbox2 = new THREE.Box3().setFromObject(loadedMesh);
+                            loadedMesh.position.y -= bbox2.min.y;
+                        }
+                        group.add(loadedMesh);
+                    }, undefined, (err) => {
+                        console.warn(`Failed to load custom GLB model for ${modelKey}`, err);
+                    });
+                }
+            });
+        }
+
+        function handleFileUpload(modelKey, inputEl) {
+            if (inputEl.files && inputEl.files[0]) {
+                const file = inputEl.files[0];
+                const objectUrl = URL.createObjectURL(file);
+                const targetInput = document.getElementById(`input-model-${modelKey}`);
+                if (targetInput) {
+                    targetInput.value = objectUrl;
+                }
+            }
+        }
+
+        function saveAndApplyCustomModels() {
+            const allModelKeys = [
+                'star', 'sun', 'moon', 'tent', 'palmTree',
+                'well', 'bucketRope',
+                'camel', 'tradeGood',
+                'egyptianColumn', 'dungeonGate', 'goldenKey',
+                'granary', 'wheat',
+                'throne', 'yusufRobe', 'father_jacob'
+            ];
+
+            let countUpdated = 0;
+            allModelKeys.forEach(key => {
+                const inputEl = document.getElementById(`input-model-${key}`);
+                if (inputEl) {
+                    const val = inputEl.value.trim();
+                    if (val) {
+                        reloadAssetGroup(key, val);
+                        countUpdated++;
+                    }
+                }
+            });
+
+            toggleModal('modal-models');
+            showNoticeModal("MODEL DIKEMASKINI", `Berjaya mengemaskini ${countUpdated > 0 ? countUpdated + ' model' : 'semua model'} 3D di dalam permainan!`);
+        }
+
         const levels = [
             {
                 id: 1, badge: "STESEN 1", name: "Mimpi 11 Bintang & Visi Malam",
                 taskText: "Tugasan: Kutip 11 Bintang & Selaraskan Bulan & Matahari Sujud",
                 targetCount: 12, currentCount: 0, offset: { x: 0, z: 0 },
                 bgColor: 0x030712, fogColor: 0x080f26, lightColor: 0x4a69bd,
-                story: "Nabi Yusuf A.S. bermimpi melihat 11 bintang, matahari, dan bulan sujud kepadanya. Ayahanda baginda, Nabi Yaakub A.S., menasihati agar mimpi ini tidak diceritakan kepada saudara-saudaranya kerana dibatasi cemburu.",
+                story: "Nabi Yusuf A.S. bermimpi melihat 11 bintang, matahari, dan bulan sujud kepadanya. Ayahanda baginda, Nabi Yaakub A.S., menasihati agar mimpi ini tidak diceritakan kepada saudara-saudara kerana dibatasi cemburu.",
                 hikmah: "💡 Hikmah: Menjaga rahsia dan kelebihan diri daripada sifat dengki orang lain. (Surah Yusuf: 4-5)"
             },
             {
@@ -560,8 +813,8 @@
             },
             {
                 id: 4, badge: "STESEN 4", name: "Istana Mesir & Penjara",
-                taskText: "Tugasan: Cari Kunci Emas, Buka Pintu Penjara & Nyalakan Obor Kebenaran",
-                targetCount: 4, currentCount: 0, offset: { x: 3000, z: 0 },
+                taskText: "Tugasan: Cari Kunci Emas & Buka Pintu Gerbang Kurungan Istana",
+                targetCount: 2, currentCount: 0, offset: { x: 3000, z: 0 },
                 bgColor: 0x0f0a1c, fogColor: 0x1d1433, lightColor: 0x9b59b6,
                 story: "Di istana, Nabi Yusuf diuji dengan godaan isteri Al-Aziz. Baginda memilih dipenjarakan secara zalim daripada melakukan perbuatan maksiat dan dosa.",
                 hikmah: "💡 Hikmah: Memelihara kesucian dan kehormatan diri adalah keutamaan seorang mukmin. (Surah Yusuf: 33)"
@@ -589,6 +842,16 @@
         let mainDirLight, levelPointLight;
         let sensitivity = 1.0;
         let isMobile = false;
+        let isGameCompleted = false;
+
+        let isInGameMode = false;
+        let hasPlayedIntroRewind = false;
+        let isPointerLocked = false;
+        let isMouseDown = false;
+        let lastMouseX = 0, lastMouseY = 0;
+        let yaw = 0, pitch = 0;
+        let joystickActive = false;
+        let joystickVector = { x: 0, y: 0 };
 
         let interactableObjects = [];
         let activeNearbyObject = null;
@@ -600,59 +863,38 @@
         let direction = new THREE.Vector3();
         let prevTime = performance.now();
 
-        let yaw = 0, pitch = 0;
-        let joystickActive = false;
-        let joystickVector = { x: 0, y: 0 };
-        let isInGameMode = false;
-
-        let isPointerLocked = false;
-        let isMouseDown = false;
-        let lastMouseX = 0, lastMouseY = 0;
-
-        function toggleStoryBox() {
-            const storyBox = document.getElementById('story-box');
-            const reopenBtn = document.getElementById('btn-reopen-story');
-            if (!storyBox) return;
-
-            if (storyBox.classList.contains('hidden')) {
-                storyBox.classList.remove('hidden');
-                if (reopenBtn) reopenBtn.classList.add('hidden');
-            } else {
-                storyBox.classList.add('hidden');
-                if (reopenBtn) reopenBtn.classList.remove('hidden');
-            }
-        }
-
-        // Procedural Fallback Meshes
-        function createPalmTree() {
-            const group = new THREE.Group();
-            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.35, 5.5, 8), new THREE.MeshStandardMaterial({ color: 0x6e4722 }));
-            trunk.position.y = 2.75;
-            group.add(trunk);
-            const leafMat = new THREE.MeshStandardMaterial({ color: 0x1e824c, side: THREE.DoubleSide });
-            for (let i = 0; i < 6; i++) {
-                const angle = (i / 6) * Math.PI * 2;
-                const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.8, 3.2, 4), leafMat);
-                leaf.position.set(Math.cos(angle) * 1.2, 5.3, Math.sin(angle) * 1.2);
-                leaf.rotation.x = Math.PI / 3;
-                leaf.rotation.y = angle;
-                group.add(leaf);
-            }
-            return group;
-        }
-
         function createBedouinTent() {
             const group = new THREE.Group();
-            const tent = new THREE.Mesh(new THREE.ConeGeometry(3.2, 3.5, 4), new THREE.MeshStandardMaterial({ color: 0x7e22ce }));
+            const tent = new THREE.Mesh(new THREE.ConeGeometry(3.2, 3.5, 4), new THREE.MeshStandardMaterial({ color: 0x7e22ce, roughness: 0.8 }));
             tent.position.y = 1.75;
             tent.rotation.y = Math.PI / 4;
             group.add(tent);
             return group;
         }
 
+        function createPalmTree() {
+            const group = new THREE.Group();
+            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.5, 5, 8), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+            trunk.position.y = 2.5;
+            const leaves = new THREE.Mesh(new THREE.ConeGeometry(2.5, 2, 8), new THREE.MeshStandardMaterial({ color: 0x15803d }));
+            leaves.position.y = 5;
+            group.add(trunk, leaves);
+            return group;
+        }
+
+        function createWell() {
+            const group = new THREE.Group();
+            const rim = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.7, 1.4, 16), new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.8 }));
+            rim.position.y = 0.7;
+            const hole = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.3, 1.42, 16), new THREE.MeshBasicMaterial({ color: 0x020617 }));
+            hole.position.y = 0.71;
+            group.add(rim, hole);
+            return group;
+        }
+
         function createCamel() {
             const group = new THREE.Group();
-            const bodyMat = new THREE.MeshStandardMaterial({ color: 0xc27c0e });
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0xc27c0e, roughness: 0.8 });
             const body = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 2.2), bodyMat);
             body.position.y = 1.6;
             const hump = new THREE.Mesh(new THREE.SphereGeometry(0.55, 12, 12), bodyMat);
@@ -661,27 +903,37 @@
             return group;
         }
 
-        function createWell() {
+        function createEgyptianPillar() {
             const group = new THREE.Group();
-            const rim = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.3, 1.1, 16), new THREE.MeshStandardMaterial({ color: 0x64748b }));
-            rim.position.y = 0.55;
-            const hole = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, 1.12, 16), new THREE.MeshBasicMaterial({ color: 0x020617 }));
-            hole.position.y = 0.56;
-            group.add(rim, hole);
+            const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.5, 5.0, 16), new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.7 }));
+            shaft.position.y = 2.5;
+            group.add(shaft);
             return group;
         }
 
-        function createEgyptianPillar() {
+        function createDungeonGate() {
             const group = new THREE.Group();
-            const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.5, 5.0, 16), new THREE.MeshStandardMaterial({ color: 0xd97706 }));
-            shaft.position.y = 3.1;
-            group.add(shaft);
+            const leftPillar = new THREE.Mesh(new THREE.BoxGeometry(0.8, 3.6, 0.8), new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.8 }));
+            leftPillar.position.set(-1.8, 1.8, 0);
+            const rightPillar = new THREE.Mesh(new THREE.BoxGeometry(0.8, 3.6, 0.8), new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.8 }));
+            rightPillar.position.set(1.8, 1.8, 0);
+            const archHeader = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.7, 0.9), new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.8 }));
+            archHeader.position.set(0, 3.25, 0);
+
+            const gateMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.3 });
+            for (let i = -1.3; i <= 1.3; i += 0.45) {
+                const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.8), gateMat);
+                bar.position.set(i, 1.4, 0);
+                group.add(bar);
+            }
+
+            group.add(leftPillar, rightPillar, archHeader);
             return group;
         }
 
         function createGranarySilo() {
             const group = new THREE.Group();
-            const body = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.5, 4.0, 16), new THREE.MeshStandardMaterial({ color: 0xb45309 }));
+            const body = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.5, 4.0, 16), new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.8 }));
             body.position.y = 2.0;
             group.add(body);
             return group;
@@ -689,11 +941,15 @@
 
         function createRoyalThrone() {
             const group = new THREE.Group();
-            const base = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.4, 2.4), new THREE.MeshStandardMaterial({ color: 0xeab308, metalness: 0.6 }));
-            base.position.y = 0.2;
-            const seat = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.3, 1.2), new THREE.MeshStandardMaterial({ color: 0x9f1239 }));
-            seat.position.set(0, 0.55, 0);
-            group.add(base, seat);
+            const platform = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.8, 3.6), new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.7 }));
+            platform.position.y = 0.4;
+            const base = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.6, 2.8), new THREE.MeshStandardMaterial({ color: 0xeab308, metalness: 0.6, roughness: 0.3 }));
+            base.position.y = 1.1;
+            const seat = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.5, 1.5), new THREE.MeshStandardMaterial({ color: 0x9f1239, roughness: 0.5 }));
+            seat.position.set(0, 1.65, 0);
+            const backrest = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2.0, 0.25), new THREE.MeshStandardMaterial({ color: 0xeab308, metalness: 0.6, roughness: 0.3 }));
+            backrest.position.set(0, 2.6, -0.6);
+            group.add(platform, base, seat, backrest);
             return group;
         }
 
@@ -726,15 +982,6 @@
             levelPointLight.position.set(0, 5, 0);
             scene.add(levelPointLight);
 
-            // Load Terrain Mesh via jsDelivr CDN
-            const terrainUrl = CDN_REPO_URL + encodeURIComponent("red_sculpted_plains_-_terrain.glb");
-            gltfLoader.load(terrainUrl, (gltf) => {
-                const terrain = gltf.scene;
-                terrain.position.set(2500, -2, 0);
-                terrain.scale.set(30, 15, 30);
-                scene.add(terrain);
-            }, undefined, (err) => console.log("Terrain Fallback Mesh Loaded."));
-
             buildIsolatedStations();
             setupControls();
             detectMobile();
@@ -756,25 +1003,24 @@
                 ground.receiveShadow = true;
                 scene.add(ground);
 
-                // Rocks boundary
                 for (let i = 0; i < 16; i++) {
                     const angle = (i / 16) * Math.PI * 2;
                     const rx = ox + Math.cos(angle) * 32;
                     const rz = oz + Math.sin(angle) * 32;
                     const rock = new THREE.Mesh(
-                        new THREE.DodecahedronGeometry(3 + Math.random() * 2),
+                        new THREE.DodecahedronGeometry(2.5 + Math.random() * 1.5),
                         new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.95 })
                     );
-                    rock.position.set(rx, 1.5, rz);
+                    rock.position.set(rx, 1.2, rz);
                     scene.add(rock);
                 }
 
-                // Station 1: Star, Sun & Moon (Elevated Celestials)
+                // Station 1: Dreams
                 if (idx === 0) {
-                    createOrLoadAsset('tent', createBedouinTent, new THREE.Vector3(ox - 8, 0, oz - 6));
+                    createOrLoadAsset('tent', createBedouinTent, new THREE.Vector3(ox - 8, 0, oz - 6), 4.5);
                     for (let p = 0; p < 6; p++) {
                         const pAngle = (p / 6) * Math.PI * 2;
-                        createOrLoadAsset('palmTree', createPalmTree, new THREE.Vector3(ox + Math.cos(pAngle) * 16, 0, oz + Math.sin(pAngle) * 16));
+                        createOrLoadAsset('palmTree', createPalmTree, new THREE.Vector3(ox + Math.cos(pAngle) * 16, 0, oz + Math.sin(pAngle) * 16), 6.0);
                     }
 
                     for (let s = 0; s < 11; s++) {
@@ -783,30 +1029,27 @@
                         const sz = oz + Math.sin(sAngle) * 9;
                         const starAsset = createOrLoadAsset('star', () => {
                             return new THREE.Mesh(new THREE.OctahedronGeometry(0.35, 0), new THREE.MeshStandardMaterial({ color: 0xf1c40f, emissive: 0xf39c12 }));
-                        }, new THREE.Vector3(sx, 1.4, sz));
+                        }, new THREE.Vector3(sx, 1.4, sz), 1.2);
 
                         interactableObjects.push({ mesh: starAsset, level: 1, type: 'star', collected: false, initialY: 1.4 });
                     }
 
-                    // Elevated Sun & Moon Celestial Group (Aligned at 8.5m height)
                     const celestialGroup = new THREE.Group();
                     celestialGroup.position.set(ox, 8.5, oz - 12);
 
                     const sunMesh = createOrLoadAsset('sun', () => {
                         const grp = new THREE.Group();
                         const core = new THREE.Mesh(new THREE.SphereGeometry(1.2, 32, 32), new THREE.MeshStandardMaterial({ color: 0xf97316, emissive: 0xea580c, emissiveIntensity: 0.8 }));
-                        const aura = new THREE.Mesh(new THREE.SphereGeometry(1.6, 16, 16), new THREE.MeshBasicMaterial({ color: 0xfde047, transparent: true, opacity: 0.35 }));
-                        grp.add(core, aura);
+                        grp.add(core);
                         return grp;
-                    }, new THREE.Vector3(-2.4, 0, 0));
+                    }, new THREE.Vector3(-2.4, 0, 0), 2.5);
 
                     const moonMesh = createOrLoadAsset('moon', () => {
                         const grp = new THREE.Group();
                         const core = new THREE.Mesh(new THREE.SphereGeometry(0.95, 32, 32), new THREE.MeshStandardMaterial({ color: 0xfffbeb, emissive: 0xfef08a, emissiveIntensity: 0.7 }));
-                        const aura = new THREE.Mesh(new THREE.SphereGeometry(1.3, 16, 16), new THREE.MeshBasicMaterial({ color: 0xfef9c3, transparent: true, opacity: 0.3 }));
-                        grp.add(core, aura);
+                        grp.add(core);
                         return grp;
-                    }, new THREE.Vector3(2.4, 0, 0));
+                    }, new THREE.Vector3(2.4, 0, 0), 2.0);
 
                     celestialGroup.add(sunMesh);
                     celestialGroup.add(moonMesh);
@@ -815,117 +1058,115 @@
                     interactableObjects.push({ mesh: celestialGroup, level: 1, type: 'sun_moon', collected: false, initialY: 8.5 });
                 }
 
-                // Station 2: Well
+                // Station 2: Desert Well
                 if (idx === 1) {
-                    const wellObj = createOrLoadAsset('well', createWell, new THREE.Vector3(ox, 0, oz));
+                    const wellObj = createOrLoadAsset('well', createWell, new THREE.Vector3(ox, 0, oz), 3.2);
                     const bucketGroup = createOrLoadAsset('bucketRope', () => {
-                        const b = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.2, 0.5, 12), new THREE.MeshStandardMaterial({ color: 0xb45309 }));
-                        b.position.y = 0.25;
+                        const b = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.3, 0.8, 12), new THREE.MeshStandardMaterial({ color: 0xb45309 }));
+                        b.position.y = 0.4;
                         return b;
-                    }, new THREE.Vector3(ox - 6, 0, oz + 4));
+                    }, new THREE.Vector3(ox - 6, 0, oz + 4), 2.0);
 
                     interactableObjects.push({ mesh: bucketGroup, level: 2, type: 'rope_bucket', collected: false, initialY: 0 });
                     interactableObjects.push({ mesh: wellObj, level: 2, type: 'well_winch', collected: false, initialY: 0 });
+
+                    for (let p = 0; p < 4; p++) {
+                        const pAngle = (p / 4) * Math.PI * 2;
+                        createOrLoadAsset('palmTree', createPalmTree, new THREE.Vector3(ox + Math.cos(pAngle) * 14, 0, oz + Math.sin(pAngle) * 14), 6.0);
+                    }
                 }
 
-                // Station 3: Caravan
+                // Station 3: Caravan Goods
                 if (idx === 2) {
-                    createOrLoadAsset('camel', createCamel, new THREE.Vector3(ox - 4, 0, oz - 4));
-                    createOrLoadAsset('camel', createCamel, new THREE.Vector3(ox + 4, 0, oz - 4));
+                    createOrLoadAsset('camel', createCamel, new THREE.Vector3(ox - 5, 0, oz - 4), 3.5, {x:0, y:Math.PI/6, z:0});
+                    createOrLoadAsset('camel', createCamel, new THREE.Vector3(ox + 5, 0, oz - 2), 3.5, {x:0, y:-Math.PI/4, z:0});
 
-                    const tradeItems = [
-                        { pos: { x: ox - 7, z: oz + 5 } }, { pos: { x: ox + 7, z: oz + 5 } },
-                        { pos: { x: ox - 3, z: oz + 7 } }, { pos: { x: ox + 3, z: oz + 7 } }
+                    const tradeCoords = [
+                        {x: ox - 7, z: oz + 5},
+                        {x: ox + 6, z: oz + 6},
+                        {x: ox - 4, z: oz - 8},
+                        {x: ox + 8, z: oz - 6}
                     ];
 
-                    tradeItems.forEach((item) => {
-                        const crateObj = createOrLoadAsset('tradeGood', () => {
-                            return new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), new THREE.MeshStandardMaterial({ color: 0xd97706 }));
-                        }, new THREE.Vector3(item.pos.x, 0.3, item.pos.z));
+                    tradeCoords.forEach((coord) => {
+                        const goodObj = createOrLoadAsset('tradeGood', () => {
+                            const box = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 1.2), new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.8 }));
+                            box.position.y = 0.6;
+                            return box;
+                        }, new THREE.Vector3(coord.x, 0, coord.z), 2.2);
 
-                        interactableObjects.push({ mesh: crateObj, level: 3, type: 'trade_good', collected: false, initialY: 0.3 });
+                        interactableObjects.push({ mesh: goodObj, level: 3, type: 'trade_good', collected: false, initialY: 0 });
                     });
                 }
 
-                // Station 4: Jail & Palace
+                // Station 4: Istana & Penjara (Dungeon Gate & Key)
                 if (idx === 3) {
-                    for (let col = -2; col <= 2; col += 2) {
-                        createOrLoadAsset('egyptianColumn', createEgyptianPillar, new THREE.Vector3(ox - 6, 0, oz + col * 4));
-                        createOrLoadAsset('egyptianColumn', createEgyptianPillar, new THREE.Vector3(ox + 6, 0, oz + col * 4));
-                    }
-
-                    const jailDoorObj = createOrLoadAsset('jailDoor', () => {
-                        const wall = new THREE.Mesh(new THREE.BoxGeometry(8, 3.5, 0.3), new THREE.MeshStandardMaterial({ color: 0x334155 }));
-                        wall.position.set(0, 1.75, 0);
-                        return wall;
-                    }, new THREE.Vector3(ox, 0, oz - 8));
+                    const gateObj = createOrLoadAsset('dungeonGate', createDungeonGate, new THREE.Vector3(ox, 0, oz - 6), 3.5);
+                    
+                    createOrLoadAsset('egyptianColumn', createEgyptianPillar, new THREE.Vector3(ox - 8, 0, oz - 4), 5.5);
+                    createOrLoadAsset('egyptianColumn', createEgyptianPillar, new THREE.Vector3(ox + 8, 0, oz - 4), 5.5);
 
                     const keyObj = createOrLoadAsset('goldenKey', () => {
-                        return new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.06, 8, 12), new THREE.MeshStandardMaterial({ color: 0xfacc15 }));
-                    }, new THREE.Vector3(ox + 8, 0.8, oz + 2));
+                        const keyMesh = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.1, 8, 16), new THREE.MeshStandardMaterial({ color: 0xf1c40f, metalness: 0.8, roughness: 0.2 }));
+                        keyMesh.position.y = 1.0;
+                        return keyMesh;
+                    }, new THREE.Vector3(ox + 7, 0, oz + 5), 1.4);
 
-                    interactableObjects.push({ mesh: keyObj, level: 4, type: 'golden_key', collected: false, initialY: 0.8 });
-                    interactableObjects.push({ mesh: jailDoorObj, level: 4, type: 'jail_door', collected: false, initialY: 0 });
-
-                    for (let t = 0; t < 2; t++) {
-                        const tx = (t === 0) ? ox - 5 : ox + 5;
-                        const torchObj = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.05, 0.8), new THREE.MeshStandardMaterial({ color: 0xd97706 }));
-                        torchObj.position.set(tx, 1.8, oz - 4);
-                        scene.add(torchObj);
-                        interactableObjects.push({ mesh: torchObj, level: 4, type: 'torch', collected: false, initialY: 1.8 });
-                    }
+                    interactableObjects.push({ mesh: keyObj, level: 4, type: 'golden_key', collected: false, initialY: 1.0 });
+                    interactableObjects.push({ mesh: gateObj, level: 4, type: 'dungeon_gate', collected: false, initialY: 0 });
                 }
 
-                // Station 5: Granary Wheat
+                // Station 5: Granary & Wheat
                 if (idx === 4) {
-                    createOrLoadAsset('granary', createGranarySilo, new THREE.Vector3(ox, 0, oz - 8));
+                    createOrLoadAsset('granary', createGranarySilo, new THREE.Vector3(ox, 0, oz - 8), 5.0);
+
                     for (let w = 0; w < 7; w++) {
-                        const wx = ox - 9 + (w * 3);
-                        const wz = oz + 4;
+                        const wAngle = (w / 7) * Math.PI * 2;
+                        const wx = ox + Math.cos(wAngle) * 9;
+                        const wz = oz + Math.sin(wAngle) * 9;
+
                         const wheatObj = createOrLoadAsset('wheat', () => {
-                            const stalk = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.0), new THREE.MeshStandardMaterial({ color: 0xeab308 }));
-                            stalk.position.y = 0.5;
+                            const stalk = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.12, 1.4, 8), new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.6 }));
+                            stalk.position.y = 0.7;
                             return stalk;
-                        }, new THREE.Vector3(wx, 0, wz));
+                        }, new THREE.Vector3(wx, 0, wz), 1.6);
 
                         interactableObjects.push({ mesh: wheatObj, level: 5, type: 'wheat', collected: false, initialY: 0 });
                     }
                 }
 
-                // Station 6: Robe & Reunion
+                // Station 6: Throne & Penyatuan Keluarga
                 if (idx === 5) {
-                    createOrLoadAsset('throne', createRoyalThrone, new THREE.Vector3(ox, 0, oz - 8));
+                    createOrLoadAsset('throne', createRoyalThrone, new THREE.Vector3(ox, 0.8, oz - 8), 4.2);
+
+                    const jacobObj = createOrLoadAsset('father_jacob', () => {
+                        const grp = new THREE.Group();
+                        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.5, 1.8, 12), new THREE.MeshStandardMaterial({ color: 0xf8fafc }));
+                        body.position.y = 0.9;
+                        const head = new THREE.Mesh(new THREE.SphereGeometry(0.35, 16, 16), new THREE.MeshStandardMaterial({ color: 0xfdedc0 }));
+                        head.position.y = 2.0;
+                        grp.add(body, head);
+                        return grp;
+                    }, new THREE.Vector3(ox, 0, oz - 2), 2.2);
+
+                    // Yusuf's Robe
                     const robeObj = createOrLoadAsset('yusufRobe', () => {
-                        return new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.0, 0.2), new THREE.MeshStandardMaterial({ color: 0xf8fafc }));
-                    }, new THREE.Vector3(ox - 6, 1.2, oz + 2));
+                        const robeMesh = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.9, 0.2), new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.5 }));
+                        robeMesh.position.y = 1.0;
+                        return robeMesh;
+                    }, new THREE.Vector3(ox + 6, 0, oz + 4), 0.85);
 
-                    const jacobSeat = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.6, 1.2), new THREE.MeshStandardMaterial({ color: 0x475569 }));
-                    jacobSeat.position.set(ox + 6, 0.3, oz + 2);
-                    scene.add(jacobSeat);
-
-                    interactableObjects.push({ mesh: robeObj, level: 6, type: 'yusuf_robe', collected: false, initialY: 1.2 });
-                    interactableObjects.push({ mesh: jacobSeat, level: 6, type: 'father_jacob', collected: false, initialY: 0.3 });
+                    interactableObjects.push({ mesh: robeObj, level: 6, type: 'yusuf_robe', collected: false, initialY: 1.0 });
+                    interactableObjects.push({ mesh: jacobObj, level: 6, type: 'father_jacob', collected: false, initialY: 0 });
                 }
             });
         }
 
-        // ==========================================
-        // 4. ANIMASI JAM REWIND & FLOW GAME
-        // ==========================================
-        function startPlaySequence() {
+        function startPlaySequence(isResume = false) {
             soundEngine.init();
             document.getElementById('main-menu').classList.add('hidden');
 
-            const rewindOverlay = document.getElementById('rewind-overlay');
-            rewindOverlay.style.opacity = '1';
-            rewindOverlay.style.pointerEvents = 'auto';
-
-            soundEngine.playRewindSwirl();
-            runClockRewindAnimation(() => {
-                // Fade into Game Station 1
-                rewindOverlay.style.opacity = '0';
-                rewindOverlay.style.pointerEvents = 'none';
-
+            const enterGameHUD = () => {
                 document.getElementById('game-hud').classList.remove('hidden');
                 document.getElementById('game-hud').classList.add('flex');
                 document.getElementById('crosshair').style.display = isMobile ? 'none' : 'block';
@@ -938,7 +1179,23 @@
                     bgAudio.volume = soundEngine.bgmVolume;
                     bgAudio.play().catch(e => console.log("BGM play blocked"));
                 }
-            });
+            };
+
+            if (isResume || hasPlayedIntroRewind) {
+                enterGameHUD();
+            } else {
+                hasPlayedIntroRewind = true;
+                const rewindOverlay = document.getElementById('rewind-overlay');
+                rewindOverlay.style.opacity = '1';
+                rewindOverlay.style.pointerEvents = 'auto';
+
+                soundEngine.playRewindSwirl();
+                runClockRewindAnimation(() => {
+                    rewindOverlay.style.opacity = '0';
+                    rewindOverlay.style.pointerEvents = 'none';
+                    enterGameHUD();
+                });
+            }
         }
 
         function runClockRewindAnimation(onComplete) {
@@ -962,7 +1219,6 @@
                 let progress = Math.min(elapsed / duration, 1);
 
                 ctx.clearRect(0, 0, 280, 280);
-
                 ctx.save();
                 ctx.translate(140, 140);
 
@@ -1040,12 +1296,43 @@
             let deg = Math.round((yaw * (180 / Math.PI)) % 360);
             if (deg < 0) deg += 360;
 
-            let dirStr = "UTARA";
-            if (deg >= 45 && deg < 135) dirStr = "TIMUR";
-            else if (deg >= 135 && deg < 225) dirStr = "SELATAN";
-            else if (deg >= 225 && deg < 315) dirStr = "BARAT";
+            const curLvl = levels[currentLevelIndex];
+            let activeTargetObj = null;
 
-            document.getElementById('compass-dir').innerText = `${dirStr} (${deg}°)`;
+            for (let obj of interactableObjects) {
+                if (obj.level === curLvl.id && !obj.collected) {
+                    activeTargetObj = obj;
+                    break;
+                }
+            }
+
+            let missionAngleDeg = 0;
+            if (activeTargetObj) {
+                const dx = activeTargetObj.mesh.position.x - camera.position.x;
+                const dz = activeTargetObj.mesh.position.z - camera.position.z;
+                let worldAngleRad = Math.atan2(dx, -dz);
+                let relativeAngleRad = worldAngleRad - yaw;
+                missionAngleDeg = Math.round(relativeAngleRad * (180 / Math.PI));
+            }
+
+            const needle = document.getElementById('compass-needle');
+            if (needle) {
+                needle.style.transform = `rotate(${missionAngleDeg}deg)`;
+            }
+
+            document.getElementById('compass-deg').innerText = `${deg}°`;
+        }
+
+        function toggleStoryBox() {
+            const box = document.getElementById('story-box');
+            const reopenBtn = document.getElementById('btn-reopen-story');
+            if (box.classList.contains('hidden')) {
+                box.classList.remove('hidden');
+                reopenBtn.classList.add('hidden');
+            } else {
+                box.classList.add('hidden');
+                reopenBtn.classList.remove('hidden');
+            }
         }
 
         function checkInteractions() {
@@ -1056,7 +1343,6 @@
                 if (obj.level === currentLvl.id && !obj.collected) {
                     let dist;
                     if (obj.type === 'sun_moon') {
-                        // 2D horizontal proximity for sky elevated celestial models
                         const dx = camera.position.x - obj.mesh.position.x;
                         const dz = camera.position.z - obj.mesh.position.z;
                         dist = Math.sqrt(dx * dx + dz * dz);
@@ -1081,7 +1367,7 @@
                 else if (activeNearbyObject.type === 'rope_bucket') prompt.innerText = "Tekan [E] / Sentuh: Ambil Tali & Baldi";
                 else if (activeNearbyObject.type === 'well_winch') prompt.innerText = "Tekan [E] / Sentuh: Pasang Tali & Timba Perigi";
                 else if (activeNearbyObject.type === 'golden_key') prompt.innerText = "Tekan [E] / Sentuh: Ambil Kunci Emas Penjara";
-                else if (activeNearbyObject.type === 'jail_door') prompt.innerText = "Tekan [E] / Sentuh: Buka Pintu Penjara";
+                else if (activeNearbyObject.type === 'dungeon_gate') prompt.innerText = "Tekan [E] / Sentuh: Buka Pintu Gerbang Kurungan";
                 else if (activeNearbyObject.type === 'yusuf_robe') prompt.innerText = "Tekan [E] / Sentuh: Ambil Baju Yusuf A.S.";
                 else if (activeNearbyObject.type === 'father_jacob') prompt.innerText = "Tekan [E] / Sentuh: Usapkan Baju pada Mata Ayahanda";
                 else prompt.innerText = "Tekan [E] / Sentuh untuk Interaksi";
@@ -1099,8 +1385,8 @@
                 return;
             }
 
-            if (activeNearbyObject.type === 'jail_door' && !playerInventory.includes('golden_key')) {
-                showNoticeModal("⚠️ PINTU TERKUNCI", "Pintu penjara ini dikunci rapat. Cari Kunci Emas di kawasan istana terlebih dahulu!");
+            if (activeNearbyObject.type === 'dungeon_gate' && !playerInventory.includes('golden_key')) {
+                showNoticeModal("⚠️ PINTU TERKUNCI", "Pintu gerbang kurungan ini dikunci rapat. Cari Kunci Emas di kawasan istana terlebih dahulu!");
                 return;
             }
 
@@ -1146,6 +1432,7 @@
                     yaw = 0; pitch = 0;
                     updateEnvironmentAtmosphere();
                 } else {
+                    isGameCompleted = true;
                     showNoticeModal(
                         `🎉 KEMBARA SELESAI!`,
                         `Alhamdulillah! Anda telah berjaya menghayati dan menamatkan kesemua 6 stesen Kembara Nabi Yusuf A.S. Penglihatan Nabi Yaakub A.S. kembali pulih dan seluruh keluarga baginda bersatu kembali dengan penuh kemaafan.`,
@@ -1187,15 +1474,24 @@
                 isPointerLocked = (document.pointerLockElement === canvas);
             });
 
+            document.addEventListener('pointerlockerror', () => {
+                isPointerLocked = false;
+            });
+
             canvas.addEventListener('mousedown', (e) => {
                 if (!isInGameMode) return;
-                if (e.button === 0) { // Left mouse click
+                if (e.button === 0) {
                     isMouseDown = true;
                     lastMouseX = e.clientX;
                     lastMouseY = e.clientY;
                     
                     if (!isMobile && !isPointerLocked) {
-                        canvas.requestPointerLock();
+                        try {
+                            const lockPromise = canvas.requestPointerLock();
+                            if (lockPromise && typeof lockPromise.catch === 'function') {
+                                lockPromise.catch(() => {});
+                            }
+                        } catch (err) {}
                     }
                 }
             });
@@ -1334,13 +1630,15 @@
             camera.position.x = Math.max(curLvl.offset.x - 28, Math.min(curLvl.offset.x + 28, camera.position.x));
             camera.position.z = Math.max(curLvl.offset.z - 28, Math.min(curLvl.offset.z + 28, camera.position.z));
 
-            // Floating collectibles animation
             const time = performance.now() * 0.003;
             interactableObjects.forEach((obj) => {
                 if (!obj.collected) {
-                    obj.mesh.rotation.y += 0.025;
-                    if (obj.type === 'star' || obj.type === 'yusuf_robe') {
-                        obj.mesh.position.y = obj.initialY + Math.sin(time + obj.mesh.position.x) * 0.15;
+                    const isStaticStructure = (obj.type === 'dungeon_gate' || obj.type === 'well_winch' || obj.type === 'father_jacob' || obj.type === 'sun_moon' || obj.type === 'wheat' || obj.type === 'rope_bucket' || obj.type === 'trade_good');
+                    if (!isStaticStructure) {
+                        obj.mesh.rotation.y += 0.025;
+                    }
+                    if (obj.type === 'star' || obj.type === 'yusuf_robe' || obj.type === 'golden_key') {
+                        obj.mesh.position.y = obj.initialY + Math.sin(time + obj.mesh.position.x) * 0.12;
                     }
                 }
             });
@@ -1375,32 +1673,46 @@
             } else {
                 hikmahBox.classList.add('hidden');
             }
+
+            const btn = document.getElementById('notice-btn');
+            if (isGameCompleted) {
+                btn.innerText = "🏠 KEMBALI KE MENU UTAMA & MAIN SEMULA";
+            } else {
+                btn.innerText = "Teruskan Kembara ➔";
+            }
+
             document.getElementById('modal-notice').classList.remove('hidden');
         }
 
-        function showAssetManagerModal() {
-            toggleModal('modal-settings');
-            const container = document.getElementById('asset-inputs-list');
-            container.innerHTML = '';
-
-            for (let key in GITHUB_MODELS) {
-                const div = document.createElement('div');
-                div.innerHTML = `
-                    <label class="block font-bold text-amber-300 mb-1 capitalize">${key}:</label>
-                    <input type="text" id="asset-in-${key}" value="${GITHUB_MODELS[key]}" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200">
-                `;
-                container.appendChild(div);
+        function handleNoticeClose() {
+            toggleModal('modal-notice');
+            if (isGameCompleted) {
+                resetGameToStart();
+                returnToMainMenu();
             }
-            toggleModal('modal-assets');
         }
 
-        function applyAssetChanges() {
-            for (let key in GITHUB_MODELS) {
-                const input = document.getElementById(`asset-in-${key}`);
-                if (input) GITHUB_MODELS[key] = input.value.trim();
-            }
-            toggleModal('modal-assets');
-            showNoticeModal("✅ ASSET DIKEMASKINI!", "Pautan model 3D jsDelivr CDN telah disemak semula.");
+        function resetGameToStart() {
+            isGameCompleted = false;
+            currentLevelIndex = 0;
+            playerInventory = [];
+
+            document.getElementById('inv-slot-1').classList.remove('active');
+            document.getElementById('inv-slot-2').classList.remove('active');
+            document.getElementById('inv-slot-3').classList.remove('active');
+
+            levels.forEach(lvl => lvl.currentCount = 0);
+            interactableObjects.forEach(obj => {
+                if (obj.collected) {
+                    obj.collected = false;
+                    scene.add(obj.mesh);
+                }
+            });
+
+            const firstLvl = levels[0];
+            camera.position.set(firstLvl.offset.x, 1.7, firstLvl.offset.z + 8);
+            yaw = 0; pitch = 0;
+            updateEnvironmentAtmosphere();
         }
 
         function returnToMainMenu() {
@@ -1408,6 +1720,9 @@
             document.getElementById('game-hud').classList.add('hidden');
             document.getElementById('crosshair').style.display = 'none';
             document.getElementById('main-menu').classList.remove('hidden');
+
+            document.getElementById('btn-resume').classList.remove('hidden');
+            document.getElementById('btn-play-text').innerText = "MAIN SEMULA DARI AWAL";
         }
 
         function quitGame() {
@@ -1422,14 +1737,6 @@
 
         function updateSensitivity() {
             sensitivity = parseFloat(document.getElementById('slider-sens').value);
-        }
-
-        function toggleFullscreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(e => console.log(e));
-            } else {
-                if (document.exitFullscreen) document.exitFullscreen();
-            }
         }
 
         function onWindowResize() {
