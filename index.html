@@ -2,146 +2,1255 @@
 <html lang="ms">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kembara Nabi Yusuf A.S.</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kembara Nabi Yusuf A.S. - 3D Educational Game</title>
+    
+    <!-- CSS Dependencies & Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
     <style>
-        body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; background: #000; }
-        .overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); color: gold; display: flex;
-            align-items: center; justify-content: center; z-index: 100;
-            flex-direction: column;
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Plus Jakarta Sans', sans-serif; background: #020617; color: #fff; touch-action: none; }
+        .font-cinzel { font-family: 'Cinzel', serif; }
+
+        /* 3D Canvas Container */
+        #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+
+        /* Glassmorphism Styling */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.82);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(241, 196, 15, 0.3);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
-        .menu-container h1 {
-            font-size: 3.8rem; text-shadow: 0 0 30px gold; margin-bottom: 50px;
+
+        .gold-border { border: 2px solid #f1c40f; }
+        .gold-glow { text-shadow: 0 0 20px rgba(241, 196, 15, 0.6); }
+
+        /* Menu UI Animations */
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(241, 196, 15, 0.4); }
+            50% { box-shadow: 0 0 35px rgba(241, 196, 15, 0.85); }
         }
-        button {
-            margin: 12px; padding: 15px 50px; font-size: 1.6rem;
-            background: #3c2008; color: gold; border: 3px solid gold;
-            border-radius: 12px; cursor: pointer; transition: 0.3s;
+        .pulse-gold { animation: pulseGlow 2s infinite; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.96); }
+            to { opacity: 1; transform: scale(1); }
         }
-        button:hover { background: gold; color: #3c2008; transform: scale(1.08); }
-        
-        .modal {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: #2c1a0f; padding: 30px; border: 4px solid gold;
-            z-index: 200; color: gold; text-align: center;
+        .animate-fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        /* Custom Buttons */
+        .btn-menu {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));
+            border: 1.5px solid rgba(241, 196, 15, 0.4);
+            color: #f8fafc;
+            padding: 14px 28px;
+            border-radius: 14px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            cursor: pointer;
         }
-        .rewind-text {
-            font-size: 3rem; margin-top: 100px; opacity: 0; transition: 2s;
+        .btn-menu:hover {
+            border-color: #f1c40f;
+            background: linear-gradient(135deg, #d35400, #e67e22);
+            color: #ffffff;
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 10px 25px rgba(211, 84, 0, 0.5);
         }
+
+        /* Rewind Overlay Screen */
+        #rewind-overlay {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 100; pointer-events: none; opacity: 0;
+            background: radial-gradient(circle at center, rgba(15, 23, 42, 0.85) 0%, rgba(2, 6, 23, 0.98) 100%);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: opacity 0.5s ease;
+        }
+
+        /* Clock Animation Canvas */
+        #clock-canvas { width: 280px; height: 280px; }
+
+        /* Crosshair */
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; width: 8px; height: 8px;
+            background: rgba(255, 255, 255, 0.9); border-radius: 50%;
+            transform: translate(-50%, -50%); pointer-events: none; z-index: 15;
+            border: 2px solid rgba(0,0,0,0.5); box-shadow: 0 0 10px rgba(241,196,15,0.8);
+        }
+
+        /* Joystick for Mobile */
+        #joystick-zone {
+            position: absolute; bottom: 24px; left: 24px; width: 120px; height: 120px;
+            background: rgba(255, 255, 255, 0.12); border-radius: 50%;
+            pointer-events: auto; border: 2px solid rgba(255,255,255,0.25);
+            touch-action: none; display: none; z-index: 20;
+        }
+        #joystick-knob {
+            position: absolute; top: 38px; left: 38px; width: 44px; height: 44px;
+            background: #f1c40f; border-radius: 50%; opacity: 0.9; pointer-events: none;
+            box-shadow: 0 0 15px rgba(241, 196, 15, 0.9);
+        }
+
+        /* Mobile Action Buttons */
+        .mobile-btn {
+            position: absolute; width: 68px; height: 68px; background: rgba(15, 23, 42, 0.88);
+            border: 2px solid #f1c40f; border-radius: 50%; color: #fff;
+            font-weight: 800; display: none; justify-content: center; align-items: center;
+            pointer-events: auto; font-size: 0.85rem; backdrop-filter: blur(6px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.6); z-index: 20;
+        }
+        .mobile-btn:active { background: #f1c40f; color: #000; }
+        #btn-action-touch { bottom: 25px; right: 20px; background: rgba(39, 174, 96, 0.95); border-color: #2ecc71; }
+        #btn-jump { bottom: 25px; right: 100px; }
+
+        /* Inventory Slot */
+        .inventory-slot {
+            width: 46px; height: 46px; border-radius: 10px; background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(241, 196, 15, 0.4); display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5); transition: all 0.2s;
+        }
+        .inventory-slot.active { border-color: #2ecc71; box-shadow: 0 0 10px rgba(46, 204, 113, 0.6); }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+        ::-webkit-scrollbar-thumb { background: #f1c40f; border-radius: 3px; }
     </style>
+
+    <!-- Three.js Library & GLTFLoader -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 </head>
 <body>
-    <!-- MAIN MENU -->
-    <div id="start-overlay" class="overlay">
-        <div class="menu-container">
-            <h1>KEMBARA<br>NABI YUSUF A.S.</h1>
-            <button onclick="startGame()">▶ MAIN</button>
-            <button onclick="toggleSettings()">⚙ SETTING</button>
-            <button onclick="showNotes()">📖 NOTA</button>
-            <button onclick="exitGame()">❌ KELUAR</button>
+
+    <!-- 3D WebGL Canvas Container -->
+    <div id="canvas-container"></div>
+    <div id="crosshair" style="display: none;"></div>
+
+    <!-- MAIN MENU OVERLAY -->
+    <div id="main-menu" class="absolute inset-0 z-40 flex flex-col items-center justify-between p-6 md:p-12 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-slate-950/80">
+        <!-- Top Branding Header -->
+        <div class="text-center mt-6 animate-fade-in">
+            <div class="inline-block px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-400/30 text-amber-400 text-xs font-bold tracking-widest uppercase mb-3">
+                🕌 Ahsanul Qasas • Kisah Terbaik Al-Quran
+            </div>
+            <h1 class="font-cinzel text-3xl sm:text-5xl md:text-6xl font-black text-amber-400 tracking-wider gold-glow">
+                KEMBARA NABI YUSUF A.S.
+            </h1>
+            <p class="text-slate-300 text-sm sm:text-base mt-2 max-w-xl mx-auto font-medium">
+                Pengembaraan Interaktif 3D Memahami Iktibar, Ketabahan, dan Hikmah Perjalanan Hidup Nabi Yusuf A.S.
+            </p>
+        </div>
+
+        <!-- Central Action Menu Box -->
+        <div class="w-full max-w-xs space-y-3 glass-panel p-6 rounded-2xl border-amber-500/40 animate-fade-in my-auto">
+            <button id="btn-play" class="btn-menu w-full pulse-gold text-lg" onclick="startPlaySequence()">
+                <span>▶</span> <span>MAIN PERMAINAN</span>
+            </button>
+            <button id="btn-settings" class="btn-menu w-full" onclick="toggleModal('modal-settings')">
+                <span>⚙</span> <span>TETAPAN</span>
+            </button>
+            <button id="btn-notes" class="btn-menu w-full" onclick="toggleModal('modal-notes')">
+                <span>📖</span> <span>NOTA & RUJUKAN</span>
+            </button>
+            <button id="btn-quit" class="btn-menu w-full text-rose-400 hover:text-white" onclick="quitGame()">
+                <span>❌</span> <span>KELUAR</span>
+            </button>
+        </div>
+
+        <!-- Footer Info -->
+        <div class="text-center text-xs text-slate-400 font-medium pb-2">
+            Versi Penambahbaikan 3D • Dibangunkan untuk Pembelajaran Agama & Moral Interaktif
         </div>
     </div>
 
-    <!-- SETTINGS -->
-    <div id="settings-modal" class="modal" style="display:none">
-        <h2>Setting</h2>
-        <p>Volume: <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.5" oninput="updateAudioVolume()"></p>
-        <p>Sensitivity: <input type="range" id="sens-slider" min="0.2" max="2" step="0.1" value="1" oninput="updateSensitivity()"></p>
-        <button onclick="toggleSettings()">Tutup</button>
+    <!-- TIME REWIND CUTSCENE OVERLAY -->
+    <div id="rewind-overlay">
+        <canvas id="clock-canvas"></canvas>
+        <div id="rewind-text" class="font-cinzel text-2xl md:text-4xl text-amber-400 font-bold tracking-widest mt-6 opacity-0 transition-opacity duration-1000 text-center px-4">
+            "4000 Tahun Dahulu..."
+        </div>
+        <div id="rewind-subtext" class="text-slate-300 text-sm md:text-base mt-2 opacity-0 transition-opacity duration-1000 text-center font-medium">
+            Kembali ke Tanah Kanaan & Bumi Mesir Kuno
+        </div>
     </div>
 
-    <!-- REWIND ANIMATION -->
-    <div id="rewind-screen" class="overlay" style="display:none; background:#111;">
-        <div id="rewind-text" class="rewind-text"></div>
+    <!-- IN-GAME HUD OVERLAY -->
+    <div id="game-hud" class="absolute inset-0 z-30 pointer-events-none hidden flex-col justify-between p-4 md:p-6">
+        <!-- Top HUD Bar -->
+        <div class="flex justify-between items-start gap-4">
+            <!-- Level & Task Card -->
+            <div class="glass-panel p-4 rounded-2xl pointer-events-auto border-amber-500/40 max-w-md w-full">
+                <div class="flex justify-between items-center mb-1">
+                    <span id="hud-station-badge" class="bg-amber-600 text-white font-extrabold text-[10px] sm:text-xs px-2.5 py-1 rounded-md uppercase tracking-wider">
+                        STESEN 1
+                    </span>
+                    <!-- Compass Header -->
+                    <div class="text-xs font-bold text-amber-300 flex items-center gap-1">
+                        🧭 <span id="compass-dir">UTARA (0°)</span>
+                    </div>
+                </div>
+                <h2 id="hud-station-title" class="text-lg sm:text-xl font-extrabold text-amber-400 font-cinzel leading-tight mt-1">
+                    Mimpi 11 Bintang
+                </h2>
+                <div id="hud-task-tracker" class="text-xs sm:text-sm text-emerald-400 font-bold mt-2 flex items-center gap-2">
+                    <span>🎯 Tugasan: Kutip Bintang (0 / 11)</span>
+                </div>
+            </div>
+
+            <!-- Top Right Action Controls -->
+            <div class="flex gap-2 pointer-events-auto">
+                <!-- Inventory Quick Bar -->
+                <div class="glass-panel p-2 rounded-2xl flex gap-1.5 items-center hidden sm:flex">
+                    <div id="inv-slot-1" class="inventory-slot" title="Tali & Baldi">🪣</div>
+                    <div id="inv-slot-2" class="inventory-slot" title="Kunci Emas">🔑</div>
+                    <div id="inv-slot-3" class="inventory-slot" title="Baju Yusuf">🥋</div>
+                </div>
+
+                <button class="glass-panel p-3 rounded-2xl text-amber-400 font-bold hover:bg-slate-800/80 transition" onclick="toggleModal('modal-notes')">
+                    📖 Nota
+                </button>
+                <button class="glass-panel p-3 rounded-2xl text-amber-400 font-bold hover:bg-slate-800/80 transition" onclick="toggleModal('modal-settings')">
+                    ⚙️
+                </button>
+                <button class="glass-panel p-3 rounded-2xl text-amber-400 font-bold hover:bg-slate-800/80 transition" onclick="returnToMainMenu()">
+                    🏠 Menu
+                </button>
+            </div>
+        </div>
+
+        <!-- Interactive Action Prompt -->
+        <div id="interaction-prompt" class="self-center glass-panel px-6 py-3 rounded-full border-2 border-amber-400 text-amber-300 font-extrabold text-sm sm:text-base tracking-wide pulse-gold hidden mb-20 pointer-events-none text-center">
+            Tekan [E] atau Sentuh untuk Interaksi
+        </div>
+
+        <!-- Bottom Story Dialogue Box -->
+        <div id="story-box" class="glass-panel p-4 md:p-6 rounded-2xl border-amber-500/50 max-w-2xl mx-auto w-full pointer-events-auto mb-2 relative animate-fade-in">
+            <div class="flex items-center justify-between mb-2">
+                <span id="story-title" class="font-cinzel text-amber-400 font-bold text-base sm:text-lg flex items-center gap-2">
+                    📜 Kisah Nabi Yusuf A.S.
+                </span>
+                <button onclick="document.getElementById('story-box').classList.add('hidden')" class="text-slate-400 hover:text-white text-xs">✕ Tutup</button>
+            </div>
+            <p id="story-text" class="text-slate-200 text-xs sm:text-sm leading-relaxed mb-3">
+                Penerangan kisah ringkas stesen...
+            </p>
+            <div id="story-hikmah" class="bg-amber-500/10 border-l-4 border-amber-400 p-2.5 rounded-r-lg text-xs sm:text-sm text-amber-300 italic font-semibold">
+                💡 Hikmah: Memahami pengajaran Al-Quran.
+            </div>
+        </div>
     </div>
 
-    <audio id="bg-music" loop>
-        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+    <!-- MODAL: NOTA & RUJUKAN SURAH YUSUF -->
+    <div id="modal-notes" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-2xl max-h-[85vh] rounded-3xl p-6 overflow-y-auto border-amber-500/40 relative animate-fade-in">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-700">
+                <h3 class="font-cinzel text-2xl font-bold text-amber-400">📖 Nota & Rujukan Surah Yusuf</h3>
+                <button onclick="toggleModal('modal-notes')" class="text-slate-400 hover:text-white text-xl font-bold">✕</button>
+            </div>
+            
+            <div class="space-y-4 text-slate-300 text-sm leading-relaxed">
+                <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                    <h4 class="font-bold text-amber-300 text-base mb-1">🌟 Apakah 'Ahsanul Qasas'?</h4>
+                    <p>Surah Yusuf dalam Al-Quran dinamakan oleh Allah SWT sebagai <em>Ahsanul Qasas</em> (Kisah Terbaik) kerana sarat dengan iktibar sabar, ketakwaan, kemaafan, dan susunan takdir yang amat indah.</p>
+                </div>
+
+                <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                    <h4 class="font-bold text-amber-300 text-base mb-2">📌 Rujukan 6 Stesen Kembara:</h4>
+                    <ul class="list-disc pl-5 space-y-2 text-xs sm:text-sm">
+                        <li><strong class="text-amber-400">Stesen 1 (Mimpi):</strong> Surah Yusuf ayat 4-5 • Pengajaran menjaga rahsia daripada sifat dengki.</li>
+                        <li><strong class="text-amber-400">Stesen 2 (Perigi Padang Pasir):</strong> Surah Yusuf ayat 15 • Pengajaran kesabaran menghadapi kezaliman.</li>
+                        <li><strong class="text-amber-400">Stesen 3 (Kafilah Musafir):</strong> Surah Yusuf ayat 19-21 • Pengajaran perancangan Allah sentiasa mengatasi muslihat manusia.</li>
+                        <li><strong class="text-amber-400">Stesen 4 (Ujian Istana & Penjara):</strong> Surah Yusuf ayat 33 • Pengajaran memelihara kesucian maruah dan kehormatan diri.</li>
+                        <li><strong class="text-amber-400">Stesen 5 (7 Tahun Subur & Kemarau):</strong> Surah Yusuf ayat 47-55 • Pengajaran amanah, ilmu, dan persediaan mengurus krisis negara.</li>
+                        <li><strong class="text-amber-400">Stesen 6 (Penyatuan & Kemaafan):</strong> Surah Yusuf ayat 90-100 • Pengajaran sifat pemaaf memadamkan dendam lama.</li>
+                    </ul>
+                </div>
+
+                <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                    <h4 class="font-bold text-amber-300 text-base mb-1">🕹️ Cara Bermain:</h4>
+                    <p class="text-xs sm:text-sm">
+                        • <strong>Komputer:</strong> Gunakan butang <code>WASD</code> / Anak Panah untuk bergerak. Seret tetikus untuk memandang sekeliling. Tekan <code>E</code> untuk mengambil objek / berinteraksi.<br>
+                        • <strong>Telefon Bimbit:</strong> Gunakan Joystick analog di sebelah kiri skrin dan seret jari di kawasan kanan untuk menggerakkan kamera. Tekan butang AMBIL pada skrin.
+                    </p>
+                </div>
+            </div>
+
+            <button onclick="toggleModal('modal-notes')" class="btn-menu w-full mt-6">Tutup Nota</button>
+        </div>
+    </div>
+
+    <!-- MODAL: TETAPAN GAME -->
+    <div id="modal-settings" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-md rounded-3xl p-6 border-amber-500/40 relative animate-fade-in space-y-5">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-700">
+                <h3 class="font-cinzel text-xl font-bold text-amber-400">⚙️ Tetapan Permainan</h3>
+                <button onclick="toggleModal('modal-settings')" class="text-slate-400 hover:text-white text-xl font-bold">✕</button>
+            </div>
+
+            <div>
+                <label class="block text-amber-300 text-xs font-bold uppercase mb-2">🔊 Lantangan Muzik & Kesan Bunyi:</label>
+                <input type="range" id="slider-volume" min="0" max="1" step="0.05" value="0.6" onchange="updateAudioVolume()" class="w-full accent-amber-400 cursor-pointer">
+            </div>
+
+            <div>
+                <label class="block text-amber-300 text-xs font-bold uppercase mb-2">🎛️ Sensitiviti Kamera / Kawalan:</label>
+                <input type="range" id="slider-sens" min="0.4" max="2.5" step="0.1" value="1.0" onchange="updateSensitivity()" class="w-full accent-amber-400 cursor-pointer">
+            </div>
+
+            <div>
+                <label class="block text-amber-300 text-xs font-bold uppercase mb-2">🖥️ Mod Paparan:</label>
+                <button onclick="toggleFullscreen()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 rounded-xl text-sm transition border border-slate-600">
+                    ⛶ Tukar Mod Skrin Penuh (Fullscreen)
+                </button>
+            </div>
+
+            <button onclick="showAssetManagerModal()" class="w-full bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 font-bold py-2.5 rounded-xl text-xs transition border border-amber-500/50">
+                📦 Buka Pengurus Asset 3D GLB
+            </button>
+
+            <button onclick="toggleModal('modal-settings')" class="btn-menu w-full mt-4">Simpan & Tutup</button>
+        </div>
+    </div>
+
+    <!-- MODAL: ASSET MANAGER (GLB JSDELIVR CDN INTEGRATION) -->
+    <div id="modal-assets" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-xl max-h-[85vh] rounded-3xl p-6 overflow-y-auto border-amber-500/40 relative animate-fade-in">
+            <h3 class="font-cinzel text-xl font-bold text-amber-400 mb-2">📦 Pengurus Asset 3D GLB (jsDelivr CDN)</h3>
+            <p class="text-xs text-slate-400 mb-4">
+                Pautan model di bawah menggunakan <code>cdn.jsdelivr.net</code> yang menyelesaikan masalah CORS dan kerosakan MIME type GitHub.
+            </p>
+
+            <div id="asset-inputs-list" class="space-y-3 text-xs">
+                <!-- Dynamic Asset Inputs Populated by JS -->
+            </div>
+
+            <div class="flex gap-3 mt-6">
+                <button onclick="applyAssetChanges()" class="btn-menu flex-1 bg-gradient-to-r from-amber-600 to-orange-600 text-white">
+                    💾 Kemaskini Asset
+                </button>
+                <button onclick="toggleModal('modal-assets')" class="px-5 py-3 rounded-xl bg-slate-800 text-slate-300 font-bold hover:bg-slate-700">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL NOTICE / DIALOGUE -->
+    <div id="modal-notice" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-lg rounded-3xl p-6 border-amber-500/40 text-center animate-fade-in space-y-4">
+            <h3 id="notice-title" class="font-cinzel text-2xl font-black text-amber-400">Tahniah!</h3>
+            <p id="notice-body" class="text-slate-300 text-sm leading-relaxed"></p>
+            <div id="notice-hikmah-box" class="bg-amber-500/10 border-l-4 border-amber-400 p-3 text-left rounded-r-xl text-amber-300 text-xs italic font-semibold"></div>
+            <button onclick="toggleModal('modal-notice')" class="btn-menu w-full mt-2">Teruskan Kembara ➔</button>
+        </div>
+    </div>
+
+    <!-- MOBILE TOUCH CONTROLS -->
+    <div id="joystick-zone"><div id="joystick-knob"></div></div>
+    <div id="btn-action-touch" class="mobile-btn" onclick="interactWithObject()">AMBIL</div>
+    <div id="btn-jump" class="mobile-btn">LOMPAT</div>
+
+    <!-- AUDIO BACKGROUND MUSIC -->
+    <audio id="bg-music" loop preload="auto">
+        <source src="https://cdn.jsdelivr.net/gh/smassrgb/My-Game-Yusuf@main/background%20music.mp3" type="audio/mp3">
     </audio>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/examples/js/loaders/GLTFLoader.js"></script>
-
+    <!-- JAVASCRIPT LOGIC -->
     <script>
-        // ================== VARIABLE GLOBAL ==================
-        let scene, camera, renderer, prevTime = performance.now();
-        let velocity = new THREE.Vector3();
-        let isGrounded = false;
-        let sensitivity = 1;
-        let currentLevelIndex = 0;
-        let interactableObjects = [];
+        // ==========================================
+        // 1. SOUND ENGINE (Synthesized Audio & BGM)
+        // ==========================================
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.bgmVolume = 0.6;
+            }
 
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioCtx();
+                }
+            }
+
+            playClockTick() {
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(200, now + 0.04);
+                gain.gain.setValueAtTime(0.25 * this.bgmVolume, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.04);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.04);
+            }
+
+            playRewindSwirl() {
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(800, now + 2.5);
+                gain.gain.setValueAtTime(0.01, now);
+                gain.gain.linearRampToValueAtTime(0.3 * this.bgmVolume, now + 1.2);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 2.8);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 2.8);
+            }
+
+            playCollectSFX() {
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.25);
+                gain.gain.setValueAtTime(0.3 * this.bgmVolume, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            }
+
+            playWinFanfare() {
+                if (!this.ctx) return;
+                const notes = [440, 554.37, 659.25, 880];
+                notes.forEach((freq, idx) => {
+                    setTimeout(() => {
+                        if (!this.ctx) return;
+                        const now = this.ctx.currentTime;
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, now);
+                        gain.gain.setValueAtTime(0.3 * this.bgmVolume, now);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start(now);
+                        osc.stop(now + 0.4);
+                    }, idx * 120);
+                });
+            }
+        }
+        const soundEngine = new SoundEngine();
+
+        // ==========================================
+        // 2. ASSET MANAGER & JSDELIVR CDN URLs
+        // ==========================================
+        const CDN_REPO_URL = "https://cdn.jsdelivr.net/gh/smassrgb/My-Game-Yusuf@main/";
+
+        let GITHUB_MODELS = {
+            star: CDN_REPO_URL + encodeURIComponent("Star by Poly by Google - 9NXf-SDxJny.glb"),
+            sun: CDN_REPO_URL + encodeURIComponent("Sun by Zoe XR - 7diieNtphvD.glb"),
+            moon: CDN_REPO_URL + encodeURIComponent("Moon by Zoe XR - 10VNaCg1jYM.glb"),
+            tent: CDN_REPO_URL + encodeURIComponent("need_some_space.glb"),
+            palmTree: CDN_REPO_URL + encodeURIComponent("Palm tree by Poly by Google - 1l79utpMAy0.glb"),
+            well: CDN_REPO_URL + encodeURIComponent("Well by Quaternius - QlqncKYxXb.glb"),
+            bucketRope: CDN_REPO_URL + encodeURIComponent("Bag Open by Quaternius - rJuZexcuhU.glb"),
+            camel: CDN_REPO_URL + encodeURIComponent("Camel by Poly by Google - cyuwV4fg0B1.glb"),
+            tradeGood: CDN_REPO_URL + encodeURIComponent("Crate by Quaternius - 3OEFd1AWfa.glb"),
+            egyptianColumn: CDN_REPO_URL + encodeURIComponent("Pillar by Kay Lousberg - 1nt8n3rVKU.glb"),
+            jailDoor: CDN_REPO_URL + encodeURIComponent("Jail by Poly by Google - bF8mr05ofaY.glb"),
+            goldenKey: CDN_REPO_URL + encodeURIComponent("Chest by Quaternius - eEcIqgJzJ1.glb"),
+            granary: CDN_REPO_URL + encodeURIComponent("Storage House by Quaternius - d2ZQWcuhwR.glb"),
+            wheat: CDN_REPO_URL + encodeURIComponent("Field of wheat by Poly by Google - cNX9BRNG6ep.glb"),
+            throne: CDN_REPO_URL + encodeURIComponent("royal_throne_by_modenese.glb"),
+            yusufRobe: CDN_REPO_URL + encodeURIComponent("robe_cloth_for_iclone_and_character_creator.glb")
+        };
+
+        const gltfLoader = new THREE.GLTFLoader();
+        const loadedAssetGroups = [];
+
+        function createOrLoadAsset(modelKey, fallbackFn, position, scale = {x:1, y:1, z:1}, rotation = {x:0, y:0, z:0}) {
+            const parentGroup = new THREE.Group();
+            parentGroup.position.copy(position);
+            parentGroup.rotation.set(rotation.x, rotation.y, rotation.z);
+            parentGroup.scale.set(scale.x, scale.y, scale.z);
+            parentGroup.userData = { modelKey, fallbackFn, position, scale, rotation };
+
+            const modelUrl = GITHUB_MODELS[modelKey];
+            const fallbackMesh = fallbackFn();
+            parentGroup.add(fallbackMesh);
+
+            if (modelUrl && modelUrl.trim().length > 10) {
+                gltfLoader.load(
+                    modelUrl,
+                    (gltf) => {
+                        while(parentGroup.children.length > 0) {
+                            parentGroup.remove(parentGroup.children[0]);
+                        }
+                        const loadedMesh = gltf.scene;
+                        loadedMesh.traverse((child) => {
+                            if (child.isMesh) {
+                                child.castShadow = true;
+                                child.receiveShadow = true;
+                            }
+                        });
+                        parentGroup.add(loadedMesh);
+                    },
+                    undefined,
+                    (err) => {
+                        console.warn(`[Asset CDN Fallback] Menggunakan model binaan untuk '${modelKey}'`, err);
+                    }
+                );
+            }
+
+            scene.add(parentGroup);
+            loadedAssetGroups.push(parentGroup);
+            return parentGroup;
+        }
+
+        // ==========================================
+        // 3. GAME LEVELS & STORY DATA
+        // ==========================================
         const levels = [
-            { offset: { x: 0, z: 0 } }
+            {
+                id: 1, badge: "STESEN 1", name: "Mimpi 11 Bintang & Visi Malam",
+                taskText: "Tugasan: Kutip 11 Bintang & Selaraskan Bulan/Matahari",
+                targetCount: 12, currentCount: 0, offset: { x: 0, z: 0 },
+                bgColor: 0x030712, fogColor: 0x080f26, lightColor: 0x4a69bd,
+                story: "Nabi Yusuf A.S. bermimpi melihat 11 bintang, matahari, dan bulan sujud kepadanya. Ayahanda baginda, Nabi Yaakub A.S., menasihati agar mimpi ini tidak diceritakan kepada saudara-saudaranya kerana dibatasi cemburu.",
+                hikmah: "💡 Hikmah: Menjaga rahsia dan kelebihan diri daripada sifat dengki orang lain. (Surah Yusuf: 4-5)"
+            },
+            {
+                id: 2, badge: "STESEN 2", name: "Perigi Tua Padang Pasir",
+                taskText: "Tugasan: Ambil Tali & Baldi, Pasang di Perigi untuk Selamatkan Yusuf",
+                targetCount: 2, currentCount: 0, offset: { x: 1000, z: 0 },
+                bgColor: 0x1f140e, fogColor: 0x2e1e16, lightColor: 0xe67e22,
+                story: "Saudara-saudara Nabi Yusuf membawa baginda ke padang pasir lalu mencampakkannya ke dalam perigi gelap. Allah SWT mententeramkan hati Nabi Yusuf bahawa baginda akan diselamatkan.",
+                hikmah: "💡 Hikmah: Kesabaran yang tinggi tatkala dizalimi oleh orang yang paling rapat. (Surah Yusuf: 15)"
+            },
+            {
+                id: 3, badge: "STESEN 3", name: "Kafilah Musafir & Dagangan",
+                taskText: "Tugasan: Kumpul 4 Barang Dagangan ke Dalam Karong Unta",
+                targetCount: 4, currentCount: 0, offset: { x: 2000, z: 0 },
+                bgColor: 0x241708, fogColor: 0x3d2812, lightColor: 0xf1c40f,
+                story: "Kafilah dagang lalu di perigi dan menimba air lalu menemui Nabi Yusuf. Baginda dibawa ke Mesir dan dijual sebagai hamba dengan harga yang murah kepada Al-Aziz (Menteri Mesir).",
+                hikmah: "💡 Hikmah: Perancangan Allah senantiasa indah walau bermula dengan kesusahan. (Surah Yusuf: 19-21)"
+            },
+            {
+                id: 4, badge: "STESEN 4", name: "Istana Mesir & Penjara",
+                taskText: "Tugasan: Cari Kunci Emas, Buka Pintu Penjara & Nyalakan Obor Kebenaran",
+                targetCount: 4, currentCount: 0, offset: { x: 3000, z: 0 },
+                bgColor: 0x0f0a1c, fogColor: 0x1d1433, lightColor: 0x9b59b6,
+                story: "Di istana, Nabi Yusuf diuji dengan godaan isteri Al-Aziz. Baginda memilih dipenjarakan secara zalim daripada melakukan perbuatan maksiat dan dosa.",
+                hikmah: "💡 Hikmah: Memelihara kesucian dan kehormatan diri adalah keutamaan seorang mukmin. (Surah Yusuf: 33)"
+            },
+            {
+                id: 5, badge: "STESEN 5", name: "7 Tahun Subur & Gudang Gandum",
+                taskText: "Tugasan: Tuai 7 Tangkai Gandum Emas & Simpan di Silo Gudang",
+                targetCount: 7, currentCount: 0, offset: { x: 4000, z: 0 },
+                bgColor: 0x0e1b19, fogColor: 0x162c28, lightColor: 0x2ecc71,
+                story: "Nabi Yusuf menafsirkan mimpi Raja mengenai 7 tahun kemakmuran dan 7 tahun kemarau. Baginda dilantik sebagai Bendahari Mesir untuk menguruskan bekalan makanan.",
+                hikmah: "💡 Hikmah: Kebijaksanaan, amanah, dan persediaan awal menghadapi krisis. (Surah Yusuf: 47-55)"
+            },
+            {
+                id: 6, badge: "STESEN 6", name: "Penyatuan Keluarga & Baju Yusuf",
+                taskText: "Tugasan: Ambil Baju Yusuf A.S. & Usapkan pada Mata Bapa",
+                targetCount: 2, currentCount: 0, offset: { x: 5000, z: 0 },
+                bgColor: 0x131a24, fogColor: 0x212e3e, lightColor: 0xf39c12,
+                story: "Nabi Yusuf menyerahkan bajunya untuk diusapkan ke muka ayahnya yang buta kerana menangis, lalu penglihatannya kembali pulih. Baginda memaafkan saudara-saudaranya di takhta diraja.",
+                hikmah: "💡 Hikmah: Sifat pemaaf dan tidak menyimpan dendam membawa keberkatan & penyatuan. (Surah Yusuf: 92-100)"
+            }
         ];
 
-        // ================== THREE.JS INIT ==================
-        function init() {
+        let currentLevelIndex = 0;
+        let scene, camera, renderer;
+        let mainDirLight, levelPointLight;
+        let sensitivity = 1.0;
+        let isMobile = false;
+
+        let interactableObjects = [];
+        let activeNearbyObject = null;
+        let playerInventory = [];
+
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+        let isRunning = false, isGrounded = true;
+        let velocity = new THREE.Vector3();
+        let direction = new THREE.Vector3();
+        let prevTime = performance.now();
+
+        let yaw = 0, pitch = 0;
+        let joystickActive = false;
+        let joystickVector = { x: 0, y: 0 };
+        let isInGameMode = false;
+
+        // Procedural Fallback Meshes
+        function createPalmTree() {
+            const group = new THREE.Group();
+            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.35, 5.5, 8), new THREE.MeshStandardMaterial({ color: 0x6e4722 }));
+            trunk.position.y = 2.75;
+            group.add(trunk);
+            const leafMat = new THREE.MeshStandardMaterial({ color: 0x1e824c, side: THREE.DoubleSide });
+            for (let i = 0; i < 6; i++) {
+                const angle = (i / 6) * Math.PI * 2;
+                const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.8, 3.2, 4), leafMat);
+                leaf.position.set(Math.cos(angle) * 1.2, 5.3, Math.sin(angle) * 1.2);
+                leaf.rotation.x = Math.PI / 3;
+                leaf.rotation.y = angle;
+                group.add(leaf);
+            }
+            return group;
+        }
+
+        function createBedouinTent() {
+            const group = new THREE.Group();
+            const tent = new THREE.Mesh(new THREE.ConeGeometry(3.2, 3.5, 4), new THREE.MeshStandardMaterial({ color: 0x7e22ce }));
+            tent.position.y = 1.75;
+            tent.rotation.y = Math.PI / 4;
+            group.add(tent);
+            return group;
+        }
+
+        function createCamel() {
+            const group = new THREE.Group();
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0xc27c0e });
+            const body = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 2.2), bodyMat);
+            body.position.y = 1.6;
+            const hump = new THREE.Mesh(new THREE.SphereGeometry(0.55, 12, 12), bodyMat);
+            hump.position.set(0, 2.4, 0.1);
+            group.add(body, hump);
+            return group;
+        }
+
+        function createWell() {
+            const group = new THREE.Group();
+            const rim = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.3, 1.1, 16), new THREE.MeshStandardMaterial({ color: 0x64748b }));
+            rim.position.y = 0.55;
+            const hole = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, 1.12, 16), new THREE.MeshBasicMaterial({ color: 0x020617 }));
+            hole.position.y = 0.56;
+            group.add(rim, hole);
+            return group;
+        }
+
+        function createEgyptianPillar() {
+            const group = new THREE.Group();
+            const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.5, 5.0, 16), new THREE.MeshStandardMaterial({ color: 0xd97706 }));
+            shaft.position.y = 3.1;
+            group.add(shaft);
+            return group;
+        }
+
+        function createGranarySilo() {
+            const group = new THREE.Group();
+            const body = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.5, 4.0, 16), new THREE.MeshStandardMaterial({ color: 0xb45309 }));
+            body.position.y = 2.0;
+            group.add(body);
+            return group;
+        }
+
+        function createRoyalThrone() {
+            const group = new THREE.Group();
+            const base = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.4, 2.4), new THREE.MeshStandardMaterial({ color: 0xeab308, metalness: 0.6 }));
+            base.position.y = 0.2;
+            const seat = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.3, 1.2), new THREE.MeshStandardMaterial({ color: 0x9f1239 }));
+            seat.position.set(0, 0.55, 0);
+            group.add(base, seat);
+            return group;
+        }
+
+        function init3D() {
+            const container = document.getElementById('canvas-container');
+
             scene = new THREE.Scene();
-            scene.fog = new THREE.Fog(0x88aaff, 30, 80);
+            scene.background = new THREE.Color(levels[0].bgColor);
+            scene.fog = new THREE.FogExp2(levels[0].fogColor, 0.015);
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 5, 10);
+            camera.position.set(0, 1.7, 8);
 
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             renderer.shadowMap.enabled = true;
-            document.body.appendChild(renderer.domElement);
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
 
-            // Lighting
-            const ambient = new THREE.AmbientLight(0xffffff, 0.7);
-            scene.add(ambient);
-            const sun = new THREE.DirectionalLight(0xffddaa, 1.2);
-            sun.position.set(20, 40, 10);
-            scene.add(sun);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+            scene.add(ambientLight);
 
-            // Ground
-            const groundGeo = new THREE.PlaneGeometry(200, 200);
-            const groundMat = new THREE.MeshLambertMaterial({ color: 0xc2a56b });
-            const ground = new THREE.Mesh(groundGeo, groundMat);
-            ground.rotation.x = -Math.PI / 2;
-            scene.add(ground);
+            mainDirLight = new THREE.DirectionalLight(0xfffaed, 1.2);
+            mainDirLight.position.set(20, 40, 20);
+            mainDirLight.castShadow = true;
+            scene.add(mainDirLight);
+
+            levelPointLight = new THREE.PointLight(levels[0].lightColor, 2.5, 50);
+            levelPointLight.position.set(0, 5, 0);
+            scene.add(levelPointLight);
+
+            // Load Terrain Mesh via jsDelivr CDN
+            const terrainUrl = CDN_REPO_URL + encodeURIComponent("red_sculpted_plains_-_terrain.glb");
+            gltfLoader.load(terrainUrl, (gltf) => {
+                const terrain = gltf.scene;
+                terrain.position.set(2500, -2, 0);
+                terrain.scale.set(30, 15, 30);
+                scene.add(terrain);
+            }, undefined, (err) => console.log("Terrain Fallback Mesh Loaded."));
+
+            buildIsolatedStations();
+            setupControls();
+            detectMobile();
 
             window.addEventListener('resize', onWindowResize);
         }
 
-        // ================== REWIND ANIMATION ==================
-        function startRewindAnimation() {
-            const rewindScreen = document.getElementById('rewind-screen');
-            const text = document.getElementById('rewind-text');
-            
-            rewindScreen.style.display = 'flex';
-            rewindScreen.style.opacity = '1';
+        function buildIsolatedStations() {
+            levels.forEach((lvl, idx) => {
+                const ox = lvl.offset.x;
+                const oz = lvl.offset.z;
 
-            // Sequence
-            setTimeout(() => {
-                text.textContent = "4000 Tahun Dahulu...";
-                text.style.opacity = "1";
-            }, 800);
+                const ground = new THREE.Mesh(
+                    new THREE.PlaneGeometry(70, 70),
+                    new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 })
+                );
+                ground.rotation.x = -Math.PI / 2;
+                ground.position.set(ox, 0, oz);
+                ground.receiveShadow = true;
+                scene.add(ground);
 
-            setTimeout(() => {
-                rewindScreen.style.opacity = "0";
-                setTimeout(() => {
-                    rewindScreen.style.display = 'none';
-                    document.getElementById('start-overlay').style.display = 'none';
-                    startActualGame();
-                }, 1200);
-            }, 4200);
+                // Rocks boundary
+                for (let i = 0; i < 16; i++) {
+                    const angle = (i / 16) * Math.PI * 2;
+                    const rx = ox + Math.cos(angle) * 32;
+                    const rz = oz + Math.sin(angle) * 32;
+                    const rock = new THREE.Mesh(
+                        new THREE.DodecahedronGeometry(3 + Math.random() * 2),
+                        new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.95 })
+                    );
+                    rock.position.set(rx, 1.5, rz);
+                    scene.add(rock);
+                }
+
+                // Station 1: Star
+                if (idx === 0) {
+                    createOrLoadAsset('tent', createBedouinTent, new THREE.Vector3(ox - 8, 0, oz - 6));
+                    for (let p = 0; p < 6; p++) {
+                        const pAngle = (p / 6) * Math.PI * 2;
+                        createOrLoadAsset('palmTree', createPalmTree, new THREE.Vector3(ox + Math.cos(pAngle) * 16, 0, oz + Math.sin(pAngle) * 16));
+                    }
+
+                    for (let s = 0; s < 11; s++) {
+                        const sAngle = (s / 11) * Math.PI * 2;
+                        const sx = ox + Math.cos(sAngle) * 9;
+                        const sz = oz + Math.sin(sAngle) * 9;
+                        const starAsset = createOrLoadAsset('star', () => {
+                            return new THREE.Mesh(new THREE.OctahedronGeometry(0.35, 0), new THREE.MeshStandardMaterial({ color: 0xf1c40f, emissive: 0xf39c12 }));
+                        }, new THREE.Vector3(sx, 1.4, sz));
+
+                        interactableObjects.push({ mesh: starAsset, level: 1, type: 'star', collected: false, initialY: 1.4 });
+                    }
+
+                    const sunMoonGroup = createOrLoadAsset('sun', () => {
+                        const grp = new THREE.Group();
+                        const sun = new THREE.Mesh(new THREE.SphereGeometry(0.6, 16, 16), new THREE.MeshStandardMaterial({ color: 0xf97316, emissive: 0xea580c }));
+                        const moon = new THREE.Mesh(new THREE.SphereGeometry(0.45, 16, 16), new THREE.MeshStandardMaterial({ color: 0xfef08a, emissive: 0xfde047 }));
+                        sun.position.set(-0.7, 1.5, 0);
+                        moon.position.set(0.7, 1.5, 0);
+                        grp.add(sun, moon);
+                        return grp;
+                    }, new THREE.Vector3(ox, 0, oz - 10));
+
+                    interactableObjects.push({ mesh: sunMoonGroup, level: 1, type: 'sun_moon', collected: false, initialY: 0 });
+                }
+
+                // Station 2: Well
+                if (idx === 1) {
+                    const wellObj = createOrLoadAsset('well', createWell, new THREE.Vector3(ox, 0, oz));
+                    const bucketGroup = createOrLoadAsset('bucketRope', () => {
+                        const b = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.2, 0.5, 12), new THREE.MeshStandardMaterial({ color: 0xb45309 }));
+                        b.position.y = 0.25;
+                        return b;
+                    }, new THREE.Vector3(ox - 6, 0, oz + 4));
+
+                    interactableObjects.push({ mesh: bucketGroup, level: 2, type: 'rope_bucket', collected: false, initialY: 0 });
+                    interactableObjects.push({ mesh: wellObj, level: 2, type: 'well_winch', collected: false, initialY: 0 });
+                }
+
+                // Station 3: Caravan
+                if (idx === 2) {
+                    createOrLoadAsset('camel', createCamel, new THREE.Vector3(ox - 4, 0, oz - 4));
+                    createOrLoadAsset('camel', createCamel, new THREE.Vector3(ox + 4, 0, oz - 4));
+
+                    const tradeItems = [
+                        { pos: { x: ox - 7, z: oz + 5 } }, { pos: { x: ox + 7, z: oz + 5 } },
+                        { pos: { x: ox - 3, z: oz + 7 } }, { pos: { x: ox + 3, z: oz + 7 } }
+                    ];
+
+                    tradeItems.forEach((item) => {
+                        const crateObj = createOrLoadAsset('tradeGood', () => {
+                            return new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), new THREE.MeshStandardMaterial({ color: 0xd97706 }));
+                        }, new THREE.Vector3(item.pos.x, 0.3, item.pos.z));
+
+                        interactableObjects.push({ mesh: crateObj, level: 3, type: 'trade_good', collected: false, initialY: 0.3 });
+                    });
+                }
+
+                // Station 4: Jail & Palace
+                if (idx === 3) {
+                    for (let col = -2; col <= 2; col += 2) {
+                        createOrLoadAsset('egyptianColumn', createEgyptianPillar, new THREE.Vector3(ox - 6, 0, oz + col * 4));
+                        createOrLoadAsset('egyptianColumn', createEgyptianPillar, new THREE.Vector3(ox + 6, 0, oz + col * 4));
+                    }
+
+                    const jailDoorObj = createOrLoadAsset('jailDoor', () => {
+                        const wall = new THREE.Mesh(new THREE.BoxGeometry(8, 3.5, 0.3), new THREE.MeshStandardMaterial({ color: 0x334155 }));
+                        wall.position.set(0, 1.75, 0);
+                        return wall;
+                    }, new THREE.Vector3(ox, 0, oz - 8));
+
+                    const keyObj = createOrLoadAsset('goldenKey', () => {
+                        return new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.06, 8, 12), new THREE.MeshStandardMaterial({ color: 0xfacc15 }));
+                    }, new THREE.Vector3(ox + 8, 0.8, oz + 2));
+
+                    interactableObjects.push({ mesh: keyObj, level: 4, type: 'golden_key', collected: false, initialY: 0.8 });
+                    interactableObjects.push({ mesh: jailDoorObj, level: 4, type: 'jail_door', collected: false, initialY: 0 });
+
+                    for (let t = 0; t < 2; t++) {
+                        const tx = (t === 0) ? ox - 5 : ox + 5;
+                        const torchObj = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.05, 0.8), new THREE.MeshStandardMaterial({ color: 0xd97706 }));
+                        torchObj.position.set(tx, 1.8, oz - 4);
+                        scene.add(torchObj);
+                        interactableObjects.push({ mesh: torchObj, level: 4, type: 'torch', collected: false, initialY: 1.8 });
+                    }
+                }
+
+                // Station 5: Granary Wheat
+                if (idx === 4) {
+                    createOrLoadAsset('granary', createGranarySilo, new THREE.Vector3(ox, 0, oz - 8));
+                    for (let w = 0; w < 7; w++) {
+                        const wx = ox - 9 + (w * 3);
+                        const wz = oz + 4;
+                        const wheatObj = createOrLoadAsset('wheat', () => {
+                            const stalk = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.0), new THREE.MeshStandardMaterial({ color: 0xeab308 }));
+                            stalk.position.y = 0.5;
+                            return stalk;
+                        }, new THREE.Vector3(wx, 0, wz));
+
+                        interactableObjects.push({ mesh: wheatObj, level: 5, type: 'wheat', collected: false, initialY: 0 });
+                    }
+                }
+
+                // Station 6: Robe & Reunion
+                if (idx === 5) {
+                    createOrLoadAsset('throne', createRoyalThrone, new THREE.Vector3(ox, 0, oz - 8));
+                    const robeObj = createOrLoadAsset('yusufRobe', () => {
+                        return new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.0, 0.2), new THREE.MeshStandardMaterial({ color: 0xf8fafc }));
+                    }, new THREE.Vector3(ox - 6, 1.2, oz + 2));
+
+                    const jacobSeat = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.6, 1.2), new THREE.MeshStandardMaterial({ color: 0x475569 }));
+                    jacobSeat.position.set(ox + 6, 0.3, oz + 2);
+                    scene.add(jacobSeat);
+
+                    interactableObjects.push({ mesh: robeObj, level: 6, type: 'yusuf_robe', collected: false, initialY: 1.2 });
+                    interactableObjects.push({ mesh: jacobSeat, level: 6, type: 'father_jacob', collected: false, initialY: 0.3 });
+                }
+            });
         }
 
-        function startActualGame() {
-            const bgAudio = document.getElementById('bg-music');
-            if (bgAudio) bgAudio.play().catch(() => {});
-            animate();
+        // ==========================================
+        // 4. ANIMASI JAM REWIND & FLOW GAME
+        // ==========================================
+        function startPlaySequence() {
+            soundEngine.init();
+            document.getElementById('main-menu').classList.add('hidden');
+
+            const rewindOverlay = document.getElementById('rewind-overlay');
+            rewindOverlay.style.opacity = '1';
+            rewindOverlay.style.pointerEvents = 'auto';
+
+            soundEngine.playRewindSwirl();
+            runClockRewindAnimation(() => {
+                // Fade into Game Station 1
+                rewindOverlay.style.opacity = '0';
+                rewindOverlay.style.pointerEvents = 'none';
+
+                document.getElementById('game-hud').classList.remove('hidden');
+                document.getElementById('game-hud').classList.add('flex');
+                document.getElementById('crosshair').style.display = isMobile ? 'none' : 'block';
+
+                isInGameMode = true;
+                updateEnvironmentAtmosphere();
+
+                const bgAudio = document.getElementById('bg-music');
+                if (bgAudio) {
+                    bgAudio.volume = soundEngine.bgmVolume;
+                    bgAudio.play().catch(e => console.log("BGM play blocked"));
+                }
+            });
         }
 
-        // ================== GAME LOOP ==================
+        function runClockRewindAnimation(onComplete) {
+            const clockCanvas = document.getElementById('clock-canvas');
+            const ctx = clockCanvas.getContext('2d');
+            clockCanvas.width = 280;
+            clockCanvas.height = 280;
+
+            let angle = 0;
+            let duration = 3000; // 3 seconds rewind
+            let startTime = performance.now();
+
+            const rewindText = document.getElementById('rewind-text');
+            const rewindSubtext = document.getElementById('rewind-subtext');
+
+            setTimeout(() => { rewindText.style.opacity = '1'; }, 500);
+            setTimeout(() => { rewindSubtext.style.opacity = '1'; }, 1200);
+
+            function animateClock(now) {
+                let elapsed = now - startTime;
+                let progress = Math.min(elapsed / duration, 1);
+
+                // Clear canvas
+                ctx.clearRect(0, 0, 280, 280);
+
+                // Draw Gold Dial Circle
+                ctx.save();
+                ctx.translate(140, 140);
+
+                ctx.beginPath();
+                ctx.arc(0, 0, 110, 0, Math.PI * 2);
+                ctx.strokeStyle = '#f1c40f';
+                ctx.lineWidth = 6;
+                ctx.shadowColor = 'rgba(241, 196, 15, 0.8)';
+                ctx.shadowBlur = 20;
+                ctx.stroke();
+
+                // Draw Hour ticks
+                for (let i = 0; i < 12; i++) {
+                    let a = (i / 12) * Math.PI * 2;
+                    ctx.beginPath();
+                    ctx.moveTo(Math.cos(a) * 90, Math.sin(a) * 90);
+                    ctx.lineTo(Math.cos(a) * 102, Math.sin(a) * 102);
+                    ctx.strokeStyle = '#e2e8f0';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                }
+
+                // Fast Counter-Clockwise Hands spinning
+                angle = -progress * Math.PI * 24; // Spins backwards rapidly
+
+                // Hour Hand
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(Math.cos(angle * 0.1) * 55, Math.sin(angle * 0.1) * 55);
+                ctx.strokeStyle = '#f39c12';
+                ctx.lineWidth = 5;
+                ctx.stroke();
+
+                // Minute Hand
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(Math.cos(angle) * 80, Math.sin(angle) * 80);
+                ctx.strokeStyle = '#f1c40f';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                ctx.restore();
+
+                if (Math.random() < 0.3) soundEngine.playClockTick();
+
+                if (progress < 1) {
+                    requestAnimationFrame(animateClock);
+                } else {
+                    setTimeout(() => {
+                        rewindText.style.opacity = '0';
+                        rewindSubtext.style.opacity = '0';
+                        setTimeout(onComplete, 600);
+                    }, 800);
+                }
+            }
+
+            requestAnimationFrame(animateClock);
+        }
+
+        function updateEnvironmentAtmosphere() {
+            const curLvl = levels[currentLevelIndex];
+
+            scene.background.setHex(curLvl.bgColor);
+            scene.fog.color.setHex(curLvl.fogColor);
+            levelPointLight.color.setHex(curLvl.lightColor);
+            levelPointLight.position.set(curLvl.offset.x, 6, curLvl.offset.z);
+
+            document.getElementById('hud-station-badge').innerText = curLvl.badge;
+            document.getElementById('hud-station-title').innerText = curLvl.name;
+            document.getElementById('hud-task-tracker').innerText = `🎯 ${curLvl.taskText} (${curLvl.currentCount} / ${curLvl.targetCount})`;
+
+            document.getElementById('story-title').innerText = `📜 ${curLvl.badge}: ${curLvl.name}`;
+            document.getElementById('story-text').innerText = curLvl.story;
+            document.getElementById('story-hikmah').innerText = curLvl.hikmah;
+            document.getElementById('story-box').classList.remove('hidden');
+        }
+
+        function updateCompass() {
+            let deg = Math.round((yaw * (180 / Math.PI)) % 360);
+            if (deg < 0) deg += 360;
+
+            let dirStr = "UTARA";
+            if (deg >= 45 && deg < 135) dirStr = "TIMUR";
+            else if (deg >= 135 && deg < 225) dirStr = "SELATAN";
+            else if (deg >= 225 && deg < 315) dirStr = "BARAT";
+
+            document.getElementById('compass-dir').innerText = `${dirStr} (${deg}°)`;
+        }
+
+        function checkInteractions() {
+            const currentLvl = levels[currentLevelIndex];
+            activeNearbyObject = null;
+
+            for (let obj of interactableObjects) {
+                if (obj.level === currentLvl.id && !obj.collected) {
+                    let dist = camera.position.distanceTo(obj.mesh.position);
+                    if (dist < 3.2) {
+                        activeNearbyObject = obj;
+                        break;
+                    }
+                }
+            }
+
+            const prompt = document.getElementById('interaction-prompt');
+            if (activeNearbyObject) {
+                prompt.classList.remove('hidden');
+                if (activeNearbyObject.type === 'rope_bucket') prompt.innerText = "Tekan [E] / Sentuh: Ambil Tali & Baldi";
+                else if (activeNearbyObject.type === 'well_winch') prompt.innerText = "Tekan [E] / Sentuh: Pasang Tali & Timba Perigi";
+                else if (activeNearbyObject.type === 'golden_key') prompt.innerText = "Tekan [E] / Sentuh: Ambil Kunci Emas Penjara";
+                else if (activeNearbyObject.type === 'jail_door') prompt.innerText = "Tekan [E] / Sentuh: Buka Pintu Penjara";
+                else if (activeNearbyObject.type === 'yusuf_robe') prompt.innerText = "Tekan [E] / Sentuh: Ambil Baju Yusuf A.S.";
+                else if (activeNearbyObject.type === 'father_jacob') prompt.innerText = "Tekan [E] / Sentuh: Usapkan Baju pada Mata Ayahanda";
+                else prompt.innerText = "Tekan [E] / Sentuh untuk Interaksi";
+            } else {
+                prompt.classList.add('hidden');
+            }
+        }
+
+        function interactWithObject() {
+            if (!activeNearbyObject) return;
+            const curLvl = levels[currentLevelIndex];
+
+            if (activeNearbyObject.type === 'well_winch' && !playerInventory.includes('rope_bucket')) {
+                showNoticeModal("⚠️ PERTOLONGAN PERIGI", "Anda perlu mencari Tali & Baldi terlebih dahulu di sekeliling kawasan padang pasir ini!");
+                return;
+            }
+
+            if (activeNearbyObject.type === 'jail_door' && !playerInventory.includes('golden_key')) {
+                showNoticeModal("⚠️ PINTU TERKUNCI", "Pintu penjara ini dikunci rapat. Cari Kunci Emas di kawasan istana terlebih dahulu!");
+                return;
+            }
+
+            if (activeNearbyObject.type === 'father_jacob' && !playerInventory.includes('yusuf_robe')) {
+                showNoticeModal("⚠️ BAJU NABI YUSUF", "Ambil Baju Yusuf A.S. terlebih dahulu untuk diusapkan ke muka ayahanda Nabi Yaakub A.S.");
+                return;
+            }
+
+            activeNearbyObject.collected = true;
+            if (activeNearbyObject.type === 'rope_bucket') {
+                playerInventory.push('rope_bucket');
+                document.getElementById('inv-slot-1').classList.add('active');
+            }
+            if (activeNearbyObject.type === 'golden_key') {
+                playerInventory.push('golden_key');
+                document.getElementById('inv-slot-2').classList.add('active');
+            }
+            if (activeNearbyObject.type === 'yusuf_robe') {
+                playerInventory.push('yusuf_robe');
+                document.getElementById('inv-slot-3').classList.add('active');
+            }
+
+            scene.remove(activeNearbyObject.mesh);
+            soundEngine.playCollectSFX();
+
+            curLvl.currentCount++;
+            document.getElementById('hud-task-tracker').innerText = `🎯 ${curLvl.taskText} (${curLvl.currentCount} / ${curLvl.targetCount})`;
+
+            if (curLvl.currentCount >= curLvl.targetCount) {
+                soundEngine.playWinFanfare();
+
+                if (currentLevelIndex < levels.length - 1) {
+                    showNoticeModal(
+                        `✨ TAHNIAH! ${curLvl.badge} SELESAI!`,
+                        `Anda telah berjaya menamatkan tugasan di ${curLvl.name}. Laluan ke stesen seterusnya telah dibuka!`,
+                        curLvl.hikmah
+                    );
+
+                    currentLevelIndex++;
+                    const nextLvl = levels[currentLevelIndex];
+
+                    camera.position.set(nextLvl.offset.x, 1.7, nextLvl.offset.z + 8);
+                    yaw = 0; pitch = 0;
+                    updateEnvironmentAtmosphere();
+                } else {
+                    showNoticeModal(
+                        `🎉 KEMBARA SELESAI!`,
+                        `Alhamdulillah! Anda telah berjaya menghayati dan menamatkan kesemua 6 stesen Kembara Nabi Yusuf A.S. Penglihatan Nabi Yaakub A.S. kembali pulih dan seluruh keluarga baginda bersatu kembali dengan penuh kemaafan.`,
+                        `💡 "Bahawasanya sesiapa yang bertakwa dan bersabar, maka sesungguhnya Allah tidak akan mensia-siakan pahala orang yang berbuat baik." (Surah Yusuf: 90)`
+                    );
+                }
+            }
+        }
+
+        function setupControls() {
+            document.addEventListener('keydown', (e) => {
+                if (!isInGameMode) return;
+                switch(e.code) {
+                    case 'KeyW': case 'ArrowUp': moveForward = true; break;
+                    case 'KeyS': case 'ArrowDown': moveBackward = true; break;
+                    case 'KeyA': case 'ArrowLeft': moveLeft = true; break;
+                    case 'KeyD': case 'ArrowRight': moveRight = true; break;
+                    case 'KeyE': interactWithObject(); break;
+                    case 'ShiftLeft': isRunning = true; break;
+                    case 'Space': 
+                        if (isGrounded) { velocity.y += 0.13; isGrounded = false; }
+                        break;
+                }
+            });
+
+            document.addEventListener('keyup', (e) => {
+                switch(e.code) {
+                    case 'KeyW': case 'ArrowUp': moveForward = false; break;
+                    case 'KeyS': case 'ArrowDown': moveBackward = false; break;
+                    case 'KeyA': case 'ArrowLeft': moveLeft = false; break;
+                    case 'KeyD': case 'ArrowRight': moveRight = false; break;
+                    case 'ShiftLeft': isRunning = false; break;
+                }
+            });
+
+            const canvas = renderer.domElement;
+            let isMouseDown = false;
+            let lastMouseX = 0, lastMouseY = 0;
+
+            canvas.addEventListener('mousedown', (e) => {
+                if (e.button === 0 && isInGameMode) {
+                    isMouseDown = true;
+                    lastMouseX = e.clientX;
+                    lastMouseY = e.clientY;
+                }
+            });
+
+            window.addEventListener('mouseup', () => { isMouseDown = false; });
+
+            canvas.addEventListener('mousemove', (e) => {
+                if (isMouseDown && isInGameMode) {
+                    let dx = e.clientX - lastMouseX;
+                    let dy = e.clientY - lastMouseY;
+                    yaw -= dx * 0.003 * sensitivity;
+                    pitch -= dy * 0.003 * sensitivity;
+                    pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, pitch));
+                    lastMouseX = e.clientX;
+                    lastMouseY = e.clientY;
+                }
+            });
+
+            setupTouchEvents();
+        }
+
+        function setupTouchEvents() {
+            const joystickZone = document.getElementById('joystick-zone');
+            const knob = document.getElementById('joystick-knob');
+            let touchId = null;
+            let startX = 0, startY = 0;
+
+            joystickZone.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const touch = e.changedTouches[0];
+                touchId = touch.identifier;
+                startX = touch.clientX;
+                startY = touch.clientY;
+                joystickActive = true;
+            });
+
+            window.addEventListener('touchmove', (e) => {
+                for (let touch of e.changedTouches) {
+                    if (touch.identifier === touchId) {
+                        let dx = touch.clientX - startX;
+                        let dy = touch.clientY - startY;
+                        let dist = Math.min(45, Math.hypot(dx, dy));
+                        let angle = Math.atan2(dy, dx);
+
+                        let knobX = Math.cos(angle) * dist;
+                        let knobY = Math.sin(angle) * dist;
+
+                        knob.style.transform = `translate(${knobX}px, ${knobY}px)`;
+                        joystickVector.x = knobX / 45;
+                        joystickVector.y = knobY / 45;
+                    }
+                }
+            });
+
+            const resetJoystick = () => {
+                touchId = null;
+                joystickActive = false;
+                joystickVector = { x: 0, y: 0 };
+                knob.style.transform = `translate(0px, 0px)`;
+            };
+
+            window.addEventListener('touchend', resetJoystick);
+            window.addEventListener('touchcancel', resetJoystick);
+        }
+
+        function detectMobile() {
+            isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+            if (isMobile) {
+                document.getElementById('joystick-zone').style.display = 'block';
+                document.getElementById('btn-action-touch').style.display = 'flex';
+                document.getElementById('btn-jump').style.display = 'flex';
+            }
+        }
+
         function updatePlayerPhysics(delta) {
-            // Contoh physics asas (boleh tambah kod asal awak di sini)
-            velocity.y -= 9.8 * delta;
-            camera.position.y += velocity.y * delta;
+            if (!isInGameMode) {
+                // Menu background camera auto rotate
+                camera.position.x = Math.sin(performance.now() * 0.0003) * 12;
+                camera.position.z = Math.cos(performance.now() * 0.0003) * 12;
+                camera.lookAt(0, 2, 0);
+                return;
+            }
+
+            const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+            euler.x = pitch;
+            euler.y = yaw;
+            camera.quaternion.setFromEuler(euler);
+
+            const speed = isRunning ? 8.5 : 4.8;
+            direction.set(0, 0, 0);
+
+            if (moveForward) direction.z -= 1;
+            if (moveBackward) direction.z += 1;
+            if (moveLeft) direction.x -= 1;
+            if (moveRight) direction.x += 1;
+
+            if (joystickActive) {
+                direction.x = joystickVector.x;
+                direction.z = joystickVector.y;
+            }
+
+            direction.normalize();
+
+            if (direction.lengthSq() > 0) {
+                const moveVector = direction.clone().applyEuler(new THREE.Euler(0, yaw, 0));
+                camera.position.x += moveVector.x * speed * delta;
+                camera.position.z += moveVector.z * speed * delta;
+            }
+
+            velocity.y -= 0.38 * delta;
+            camera.position.y += velocity.y;
 
             if (camera.position.y <= 1.7) {
                 velocity.y = 0;
@@ -152,10 +1261,25 @@
             const curLvl = levels[currentLevelIndex];
             camera.position.x = Math.max(curLvl.offset.x - 28, Math.min(curLvl.offset.x + 28, camera.position.x));
             camera.position.z = Math.max(curLvl.offset.z - 28, Math.min(curLvl.offset.z + 28, camera.position.z));
+
+            // Floating collectibles animation
+            const time = performance.now() * 0.003;
+            interactableObjects.forEach((obj) => {
+                if (!obj.collected) {
+                    obj.mesh.rotation.y += 0.025;
+                    if (obj.type === 'star' || obj.type === 'yusuf_robe') {
+                        obj.mesh.position.y = obj.initialY + Math.sin(time + obj.mesh.position.x) * 0.15;
+                    }
+                }
+            });
+
+            checkInteractions();
+            updateCompass();
         }
 
         function animate() {
             requestAnimationFrame(animate);
+
             const time = performance.now();
             const delta = Math.min((time - prevTime) / 1000, 0.1);
             prevTime = time;
@@ -164,32 +1288,79 @@
             renderer.render(scene, camera);
         }
 
-        // ================== UI FUNCTIONS ==================
-        function startGame() {
-            document.getElementById('start-overlay').style.display = 'none';
-            startRewindAnimation();
+        function toggleModal(modalId) {
+            const el = document.getElementById(modalId);
+            if (el) el.classList.toggle('hidden');
         }
 
-        function toggleSettings() {
-            const modal = document.getElementById('settings-modal');
-            modal.style.display = (modal.style.display === 'block') ? 'none' : 'block';
+        function showNoticeModal(title, text, hikmahText = "") {
+            document.getElementById('notice-title').innerText = title;
+            document.getElementById('notice-body').innerText = text;
+            const hikmahBox = document.getElementById('notice-hikmah-box');
+            if (hikmahText) {
+                hikmahBox.innerText = hikmahText;
+                hikmahBox.classList.remove('hidden');
+            } else {
+                hikmahBox.classList.add('hidden');
+            }
+            document.getElementById('modal-notice').classList.remove('hidden');
+        }
+
+        function showAssetManagerModal() {
+            toggleModal('modal-settings');
+            const container = document.getElementById('asset-inputs-list');
+            container.innerHTML = '';
+
+            for (let key in GITHUB_MODELS) {
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <label class="block font-bold text-amber-300 mb-1 capitalize">${key}:</label>
+                    <input type="text" id="asset-in-${key}" value="${GITHUB_MODELS[key]}" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200">
+                `;
+                container.appendChild(div);
+            }
+            toggleModal('modal-assets');
+        }
+
+        function applyAssetChanges() {
+            for (let key in GITHUB_MODELS) {
+                const input = document.getElementById(`asset-in-${key}`);
+                if (input) GITHUB_MODELS[key] = input.value.trim();
+            }
+            toggleModal('modal-assets');
+            showNoticeModal("✅ ASSET DIKEMASKINI!", "Pautan model 3D jsDelivr CDN telah disemak semula.");
+        }
+
+        function returnToMainMenu() {
+            isInGameMode = false;
+            document.getElementById('game-hud').classList.add('hidden');
+            document.getElementById('crosshair').style.display = 'none';
+            document.getElementById('main-menu').classList.remove('hidden');
+        }
+
+        function quitGame() {
+            if (confirm("Adakah anda pasti mahu keluar dari permainan?")) {
+                window.close();
+                showNoticeModal("INFO", "Sila tutup tab browser ini untuk keluar sepenuhnya.");
+            }
         }
 
         function updateAudioVolume() {
-            const bg = document.getElementById('bg-music');
-            if (bg) bg.volume = parseFloat(document.getElementById('volume-slider').value);
+            soundEngine.bgmVolume = parseFloat(document.getElementById('slider-volume').value);
+            const bgAudio = document.getElementById('bg-music');
+            if (bgAudio) bgAudio.volume = soundEngine.bgmVolume;
         }
 
         function updateSensitivity() {
-            sensitivity = parseFloat(document.getElementById('sens-slider').value);
+            sensitivity = parseFloat(document.getElementById('slider-sens').value);
         }
 
-        function showNotes() {
-            alert("📖 NOTA PERMAINAN\n\n- Cerita berdasarkan Surah Yusuf\n- Cari bintang dan item untuk maju\n- Elakkan saudara-saudara yang iri hati");
-        }
-
-        function exitGame() {
-            if (confirm("Keluar dari permainan?")) window.close();
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(e => console.log(e));
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
         }
 
         function onWindowResize() {
@@ -199,9 +1370,9 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        // ================== START ==================
         window.onload = () => {
-            init();
+            init3D();
+            animate();
         };
     </script>
 </body>
