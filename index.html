@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kembara Nabi Yusuf A.S.</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #000;
+            color: #fff;
+        }
+
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* UI Overlays */
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.8));
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            color: #f1c40f;
+            text-shadow: 0 0 10px rgba(241, 196, 15, 0.5);
+        }
+
+        p {
+            font-size: 1.2rem;
+            max-width: 600px;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #fff;
+            background: #e67e22;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(230, 126, 34, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background: #d35400;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(230, 126, 34, 0.6);
+        }
+
+        /* Rewind Overlay Effect */
+        #rewind-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 5;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            background: radial-gradient(circle, rgba(241,196,15,0.2) 0%, rgba(0,0,0,0.8) 100%);
+        }
+
+        #clock-widget {
+            font-size: 5rem;
+            font-weight: bold;
+            color: #f39c12;
+            text-shadow: 0 0 20px #f39c12;
+            animation: spin 1s linear infinite reverse;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* HUD & Info Box Stesen */
+        #station-ui {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 700px;
+            background: rgba(0, 0, 0, 0.85);
+            border: 2px solid #f1c40f;
+            border-radius: 15px;
+            padding: 20px;
+            display: none;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            z-index: 2;
+        }
+
+        #station-title {
+            color: #f1c40f;
+            margin-top: 0;
+        }
+
+        .nav-btns {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+
+        .btn-small {
+            padding: 10px 25px;
+            font-size: 1rem;
+            background: #2980b9;
+            border: none;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-small:hover {
+            background: #3498db;
+        }
+    </style>
+
+    <!-- Three.js Library & GLTFLoader -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <!-- Skrin Mula -->
+    <div id="start-screen">
+        <h1>Kembara Nabi Yusuf A.S.</h1>
+        <p>Sertai kembara interaktif menyelusuri iktibar dan sejarah perjalanan hidup Nabi Yusuf A.S. dari perigi hingga menjadi wazir Mesir.</p>
+        <button class="btn" id="start-btn">MULA KEMBARA</button>
+    </div>
+
+    <!-- Animasi Rewind Jam -->
+    <div id="rewind-overlay">
+        <div id="clock-widget">⏳</div>
+    </div>
+
+    <!-- UI Stesen -->
+    <div id="station-ui">
+        <h2 id="station-title">Stesen 1: Perigi</h2>
+        <p id="station-desc">Penerangan stesen akan dipaparkan di sini...</p>
+        <div class="nav-btns">
+            <button class="btn-small" id="prev-btn" onclick="navigateStation(-1)">Sebelumnya</button>
+            <button class="btn-small" id="next-btn" onclick="navigateStation(1)">Seterusnya</button>
+        </div>
+    </div>
+
+    <!-- Audio Muzik Latar -->
+    <audio id="bg-music" loop>
+        <source src="https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/background%20music.mp3" type="audio/mp3">
+    </audio>
+
+    <script>
+        const BASE_URL = 'https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/';
+
+        // Data Stesen & Lokasi Kamera
+        const stations = [
+            {
+                id: 0,
+                title: "Stesen 1: Dibuang ke Dalam Perigi",
+                desc: "Nabi Yusuf A.S. telah dicampakkan ke dalam perigi tua di padang pasir oleh saudara-saudaranya akibat sifat dengki. Namun, Allah SWT sentiasa memelihara baginda.",
+                camPos: { x: 0, y: 6, z: 18 },
+                targetPos: { x: 0, y: 0, z: 0 }
+            },
+            {
+                id: 1,
+                title: "Stesen 2: Istana Al-Aziz (Mesir)",
+                desc: "Baginda diselamatkan oleh kafilah dagang dan dijual di Mesir. Baginda membesar di istana Al-Aziz dengan perwatakan yang mulia dan paras rupa yang tampan.",
+                camPos: { x: 60, y: 10, z: 20 },
+                targetPos: { x: 60, y: 2, z: 0 }
+            },
+            {
+                id: 2,
+                title: "Stesen 3: Penjara & Ujian Kedukaan",
+                desc: "Nabi Yusuf A.S. memilih untuk dipenjarakan demi mempertahankan ketakwaan dan kesucian diri daripada fitnah.",
+                camPos: { x: 120, y: 8, z: 18 },
+                targetPos: { x: 120, y: 1, z: 0 }
+            },
+            {
+                id: 3,
+                title: "Stesen 4: Pentadbir Gudang & Musim Kemarau",
+                desc: "Selepas mentafsirkan mimpi Raja, Nabi Yusuf dilantik menjadi menteri kewangan/pentadbir gudang makanan untuk menyelamatkan Mesir dari kemarau 7 tahun.",
+                camPos: { x: 180, y: 10, z: 22 },
+                targetPos: { x: 180, y: 2, z: 0 }
+            }
+        ];
+
+        let currentStationIndex = 0;
+        let scene, camera, renderer, gltfLoader;
+        let skyModel;
+
+        function init() {
+            const container = document.getElementById('canvas-container');
+
+            // Scene setup
+            scene = new THREE.Scene();
+
+            // Camera setup
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
+            camera.position.set(0, 15, 40);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambientLight);
+
+            const sunLight = new THREE.DirectionalLight(0xfffaed, 1.3);
+            sunLight.position.set(100, 150, 50);
+            sunLight.castShadow = true;
+            scene.add(sunLight);
+
+            gltfLoader = new THREE.GLTFLoader();
+
+            // Memuat naik Environment Utama & Asset Stesen
+            buildEnvironment();
+
+            // Event Listeners
+            window.addEventListener('resize', onWindowResize);
+            document.getElementById('start-btn').addEventListener('click', startRewindTime);
+        }
+
+        // Fungsi Memuat Naik Model GLB General
+        function loadModel(fileName, position, scale = {x:1, y:1, z:1}, rotation = {x:0, y:0, z:0}, callback = null) {
+            const url = BASE_URL + encodeURIComponent(fileName) + '.glb';
+            gltfLoader.load(url, (gltf) => {
+                const model = gltf.scene;
+                model.position.set(position.x, position.y, position.z);
+                model.scale.set(scale.x, scale.y, scale.z);
+                model.rotation.set(rotation.x, rotation.y, rotation.z);
+                
+                model.traverse((node) => {
+                    if (node.isMesh) {
+                        node.castShadow = true;
+                        node.receiveShadow = true;
+                    }
+                });
+                
+                scene.add(model);
+                if(callback) callback(model);
+            }, undefined, (error) => {
+                console.warn(`Fail ${fileName}.glb gagal dimuat naik.`, error);
+            });
+        }
+
+        function buildEnvironment() {
+            // 1. ENVIRONMENT: Terrain / Padang Pasir (red_sculpted_plains_-_terrain)
+            loadModel('red_sculpted_plains_-_terrain', { x: 90, y: -2, z: 0 }, { x: 10, y: 10, z: 10 });
+
+            // 2. ENVIRONMENT: Skybox / Space Sky (need_some_space)
+            loadModel('need_some_space', { x: 90, y: 0, z: 0 }, { x: 50, y: 50, z: 50 }, { x: 0, y: 0, z: 0 }, (m) => {
+                skyModel = m; // Disimpan untuk animasi putaran langit jika perlu
+            });
+
+            // --- STESEN 1: PERIGI & PADANG PASIR (X: 0) ---
+            loadModel('Well by Quaternius - QlqncKYxXb', { x: 0, y: 0, z: 0 }, { x: 2, y: 2, z: 2 });
+            loadModel('Camel by Poly by Google - cyuwV4fg0B1', { x: -7, y: 0, z: 4 }, { x: 1.5, y: 1.5, z: 1.5 }, { x: 0, y: 0.8, z: 0 });
+            loadModel('Palm tree by Poly by Google - 1l79utpMAy0', { x: 6, y: 0, z: -5 }, { x: 2.5, y: 2.5, z: 2.5 });
+            loadModel('Cactus by Poly by Google - 1_3Ur2-LAs8', { x: -5, y: 0, z: -4 }, { x: 1.5, y: 1.5, z: 1.5 });
+
+            // --- STESEN 2: ISTANA AL-AZIZ (X: 60) ---
+            loadModel('Palace by Poly by Google - f5wb0x6Qk3j', { x: 60, y: 0, z: -12 }, { x: 3, y: 3, z: 3 });
+            loadModel('royal_throne_by_modenese', { x: 60, y: 0, z: 0 }, { x: 1.5, y: 1.5, z: 1.5 });
+            loadModel('Pillar by Kay Lousberg - 1nt8n3rVKU', { x: 53, y: 0, z: 6 }, { x: 2, y: 2, z: 2 });
+            loadModel('Pillar by Kay Lousberg - 1nt8n3rVKU', { x: 67, y: 0, z: 6 }, { x: 2, y: 2, z: 2 });
+            loadModel('Chest by Quaternius - eEcIqgJzJ1', { x: 56, y: 0, z: 2 }, { x: 1.2, y: 1.2, z: 1.2 });
+
+            // --- STESEN 3: PENJARA (X: 120) ---
+            loadModel('Jail by Poly by Google - bF8mr05ofaY', { x: 120, y: 0, z: 0 }, { x: 2.5, y: 2.5, z: 2.5 });
+            loadModel('Torch by Quaternius - Gq38E7hFZw', { x: 117, y: 1.5, z: 3 }, { x: 1, y: 1, z: 1 });
+            loadModel('Torch by Quaternius - Gq38E7hFZw', { x: 123, y: 1.5, z: 3 }, { x: 1, y: 1, z: 1 });
+
+            // --- STESEN 4: GUDANG & PERTANIAN (X: 180) ---
+            loadModel('Storage House by Quaternius - d2ZQWcuhwR', { x: 180, y: 0, z: -6 }, { x: 2.5, y: 2.5, z: 2.5 });
+            loadModel('Field of wheat by Poly by Google - cNX9BRNG6ep', { x: 170, y: 0, z: 5 }, { x: 2, y: 2, z: 2 });
+            loadModel('Crate by Quaternius - 3OEFd1AWfa', { x: 186, y: 0, z: 3 }, { x: 1.5, y: 1.5, z: 1.5 });
+            loadModel('Cow by Poly by Google - 4w-_VbcSECP', { x: 191, y: 0, z: 2 }, { x: 1.5, y: 1.5, z: 1.5 });
+
+            // Hiasan Cakerawala Lengkap
+            loadModel('Sun by Zoe XR - 7diieNtphvD', { x: 90, y: 80, z: -120 }, { x: 6, y: 6, z: 6 });
+            loadModel('Moon by Zoe XR - 10VNaCg1jYM', { x: -40, y: 70, z: -100 }, { x: 5, y: 5, z: 5 });
+            loadModel('Star by Poly by Google - 9NXf-SDxJny', { x: 30, y: 60, z: -90 }, { x: 2, y: 2, z: 2 });
+        }
+
+        // Kesan Masa Berputar (Time Rewind Animation)
+        function startRewindTime() {
+            document.getElementById('start-screen').style.display = 'none';
+            
+            // Mainkan audio latar
+            const bgMusic = document.getElementById('bg-music');
+            bgMusic.play().catch(e => console.log("Auto-play disekat oleh penyemak imbas."));
+
+            const overlay = document.getElementById('rewind-overlay');
+            overlay.style.opacity = '1';
+
+            // Animasi pergerakan kamera laju secara membulat untuk kesan rewind masa
+            new TWEEN.Tween(camera.position)
+                .to({ x: 0, y: 25, z: 45 }, 2500)
+                .easing(TWEEN.Easing.Quadratic.InOut)
+                .onComplete(() => {
+                    overlay.style.opacity = '0';
+                    moveToStation(0);
+                    document.getElementById('station-ui').style.display = 'block';
+                })
+                .start();
+        }
+
+        // Pergerakan Kamera ke Stesen
+        function moveToStation(index) {
+            const st = stations[index];
+            currentStationIndex = index;
+
+            // Kemaskini UI
+            document.getElementById('station-title').innerText = st.title;
+            document.getElementById('station-desc').innerText = st.desc;
+
+            // Transisi Kamera Smooth menggunakan TWEEN
+            new TWEEN.Tween(camera.position)
+                .to(st.camPos, 2000)
+                .easing(TWEEN.Easing.Cubic.Out)
+                .start();
+        }
+
+        function navigateStation(direction) {
+            let newIndex = currentStationIndex + direction;
+            if (newIndex >= 0 && newIndex < stations.length) {
+                moveToStation(newIndex);
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate(time) {
+            requestAnimationFrame(animate);
+            TWEEN.update();
+            
+            // Animasi perlahan langit (Skybox rotation) jika ada
+            if(skyModel) {
+                skyModel.rotation.y += 0.0002;
+            }
+
+            // Fokus kamera sentiasa ke stesen semasa
+            if (stations[currentStationIndex]) {
+                camera.lookAt(
+                    stations[currentStationIndex].targetPos.x,
+                    stations[currentStationIndex].targetPos.y,
+                    stations[currentStationIndex].targetPos.z
+                );
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        window.onload = () => {
+            init();
+            animate();
+        };
+    </script>
+</body>
+</html>
