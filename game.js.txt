@@ -1,0 +1,269 @@
+// ==========================================
+// 1. SETUP THREE.JS, KAMERA & RENDERER
+// ==========================================
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87ceeb);
+
+const camera = new THREE.PerspectiveCamera(
+    75, 
+    window.innerWidth / window.innerHeight, 
+    0.1, 
+    1000
+);
+
+const renderer = new THREE.WebGLRenderer({ 
+    canvas: document.getElementById('game-canvas'), 
+    antialias: true 
+});
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+// ==========================================
+// 2. PENCAHAYAAN (LIGHTING)
+// ==========================================
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+scene.add(ambientLight);
+
+const sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
+sunLight.position.set(30, 50, 30);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.width = 2048;
+sunLight.shadow.mapSize.height = 2048;
+scene.add(sunLight);
+
+// ==========================================
+// 3. DAFTAR ASET (26 ASSETS)
+// ==========================================
+const ASSET_PATHS = {
+    terrain: 'assets/red_sculpted_plains_-_terrain.gltf',
+    sun: 'assets/Sun_ZoeXR.gltf',
+    moon: 'assets/Moon_ZoeXR.gltf',
+    cactus: 'assets/Cactus_Google.gltf',
+    wheat: 'assets/Field_of_wheat_Google.gltf',
+    grassWispy: 'assets/Grass_Wispy_Quaternius.gltf',
+    palmPoly: 'assets/Palm_tree_Google.gltf',
+    palmQuat: 'assets/Palm_Tree_Quaternius.gltf',
+    camel: 'assets/Camel_Google.gltf',
+    cowPoly: 'assets/Cow_Google.gltf',
+    cowQuat: 'assets/Cow_Quaternius.gltf',
+    robeCloth: 'assets/robe_cloth_for_iclone_and_character_creator.gltf',
+    jail: 'assets/Jail_Google.gltf',
+    dungeon: 'assets/modular_myan_inspired_dungeon.gltf',
+    palace: 'assets/Palace_Google.gltf',
+    pillar: 'assets/Pillar_KayLousberg.gltf',
+    storageHouse: 'assets/Storage_House_Quaternius.gltf',
+    bagOpen: 'assets/Bag_Open_Quaternius.gltf',
+    chalice: 'assets/Chalice_Quaternius.gltf',
+    chest: 'assets/Chest_Quaternius.gltf',
+    crate: 'assets/Crate_Quaternius.gltf',
+    royalThrone: 'assets/royal_throne_by_modenese.gltf',
+    star: 'assets/Star_Google.gltf',
+    torch: 'assets/Torch_Quaternius.gltf',
+    well: 'assets/Well_Quaternius.gltf',
+    space: 'assets/need_some_space.gltf'
+};
+
+const loadedModels = {};
+const collectibles = []; // Menyimpan item yang boleh diambil
+
+// UI SKOR GAMER
+let score = 0;
+const scoreUI = document.createElement('div');
+scoreUI.style.position = 'absolute';
+scoreUI.style.top = '20px';
+scoreUI.style.left = '20px';
+scoreUI.style.color = '#fff';
+scoreUI.style.fontSize = '24px';
+scoreUI.style.fontFamily = 'sans-serif';
+scoreUI.style.fontWeight = 'bold';
+scoreUI.style.textShadow = '2px 2px 4px #000';
+scoreUI.innerText = 'Skor Harta: 0';
+document.body.appendChild(scoreUI);
+
+// ==========================================
+// 4. MEMUAT NAIK ASET (LOADING MANAGER)
+// ==========================================
+const loadingManager = new THREE.LoadingManager();
+const loadingScreen = document.getElementById('loading-screen');
+
+loadingManager.onProgress = (url, itemsLoaded, itemsTotal) => {
+    const progress = Math.round((itemsLoaded / itemsTotal) * 100);
+    if (loadingScreen) loadingScreen.innerText = `Memuatkan Aset... (${progress}%)`;
+};
+
+loadingManager.onLoad = () => {
+    if (loadingScreen) loadingScreen.style.display = 'none';
+    initGameWorld();
+};
+
+const gltfLoader = new THREE.GLTFLoader(loadingManager);
+Object.keys(ASSET_PATHS).forEach((key) => {
+    gltfLoader.load(ASSET_PATHS[key], (gltf) => {
+        const model = gltf.scene;
+        model.traverse((child) => {
+            if (child.isMesh) {
+                child.castShadow = true;
+                child.receiveShadow = true;
+            }
+        });
+        loadedModels[key] = model;
+    });
+});
+
+// ==========================================
+// 5. KAWALAN PEMAIN, LOMPAT, & SPRINT
+// ==========================================
+let playerMesh = null;
+const keys = { forward: false, backward: false, left: false, right: false, sprint: false };
+
+// Fizik Lompatan & Kelajuan
+let velocityY = 0;
+let isGrounded = true;
+const gravity = -0.015;
+const jumpStrength = 0.35;
+const baseSpeed = 0.15;
+const sprintSpeed = 0.3;
+const turnSpeed = 0.05;
+
+window.addEventListener('keydown', (e) => {
+    if (e.code === 'KeyW' || e.code === 'ArrowUp') keys.forward = true;
+    if (e.code === 'KeyS' || e.code === 'ArrowDown') keys.backward = true;
+    if (e.code === 'KeyA' || e.code === 'ArrowLeft') keys.left = true;
+    if (e.code === 'KeyD' || e.code === 'ArrowRight') keys.right = true;
+    if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') keys.sprint = true;
+    
+    // FUNGSI LOMPAT (Spacebar)
+    if (e.code === 'Space' && isGrounded) {
+        velocityY = jumpStrength;
+        isGrounded = false;
+    }
+});
+
+window.addEventListener('keyup', (e) => {
+    if (e.code === 'KeyW' || e.code === 'ArrowUp') keys.forward = false;
+    if (e.code === 'KeyS' || e.code === 'ArrowDown') keys.backward = false;
+    if (e.code === 'KeyA' || e.code === 'ArrowLeft') keys.left = false;
+    if (e.code === 'KeyD' || e.code === 'ArrowRight') keys.right = false;
+    if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') keys.sprint = false;
+});
+
+// ==========================================
+// 6. PENYUSUNAN DUNIA & HARTA KARUN
+// ==========================================
+function spawnProp(modelKey, x, z, scale = 1, rotationY = 0, isCollectable = false) {
+    if (!loadedModels[modelKey]) return;
+    const instance = loadedModels[modelKey].clone();
+    instance.position.set(x, 0, z);
+    instance.scale.set(scale, scale, scale);
+    instance.rotation.y = rotationY;
+    scene.add(instance);
+
+    if (isCollectable) {
+        collectibles.push(instance);
+    }
+}
+
+function initGameWorld() {
+    if (loadedModels['terrain']) scene.add(loadedModels['terrain']);
+
+    // Set Watak
+    if (loadedModels['camel']) {
+        playerMesh = loadedModels['camel'];
+    } else {
+        const geo = new THREE.BoxGeometry(1, 1, 1);
+        const mat = new THREE.MeshLambertMaterial({ color: 0x00ff00 });
+        playerMesh = new THREE.Mesh(geo, mat);
+    }
+    playerMesh.position.set(0, 0, 0);
+    scene.add(playerMesh);
+
+    // Bangunan Utama
+    spawnProp('palace', 0, -40, 1.5);
+    spawnProp('storageHouse', -20, -15, 1);
+    spawnProp('jail', 20, -15, 1);
+    spawnProp('dungeon', 0, 40, 1);
+    spawnProp('well', 5, -10, 1);
+
+    // BARANGAN HARTA KARUN (Boleh Dikutip Untuk Tambah Skor)
+    spawnProp('chest', 7, -10, 1, 0, true);
+    spawnProp('chalice', 0, -37, 1, 0, true);
+    spawnProp('star', 15, 10, 1, 0, true);
+    spawnProp('star', -15, 10, 1, 0, true);
+
+    // Tumbuhan & Prop Lain
+    for (let i = 0; i < 15; i++) {
+        const x = (Math.random() - 0.5) * 80;
+        const z = (Math.random() - 0.5) * 80;
+        if (Math.abs(x) > 5 || Math.abs(z) > 5) {
+            spawnProp('palmQuat', x, z, 1 + Math.random() * 0.5);
+            spawnProp('cactus', x + 2, z + 2, 0.8);
+        }
+    }
+}
+
+// ==========================================
+// 7. PERGERAKAN & SAKSI INTERAKSI (LOOP)
+// ==========================================
+function updatePlayerMovement() {
+    if (!playerMesh) return;
+
+    // Tentukan Kelajuan (Sprint / Biasa)
+    const currentSpeed = keys.sprint ? sprintSpeed : baseSpeed;
+
+    // Putaran
+    if (keys.left) playerMesh.rotation.y += turnSpeed;
+    if (keys.right) playerMesh.rotation.y -= turnSpeed;
+
+    // Maju / Undur
+    if (keys.forward) playerMesh.translateZ(currentSpeed);
+    if (keys.backward) playerMesh.translateZ(-currentSpeed);
+
+    // Fizik Graviti & Lompatan
+    playerMesh.position.y += velocityY;
+    if (!isGrounded) {
+        velocityY += gravity;
+        if (playerMesh.position.y <= 0) {
+            playerMesh.position.y = 0;
+            velocityY = 0;
+            isGrounded = true;
+        }
+    }
+
+    // SEMAK INTERAKSI DENGAN HARTA KARUN (Collision Detection)
+    for (let i = collectibles.length - 1; i >= 0; i--) {
+        const item = collectibles[i];
+        const distance = playerMesh.position.distanceTo(item.position);
+        
+        // Jika pemain dekat dengan harta karun (< 2 unit)
+        if (distance < 2.0) {
+            scene.remove(item); // Hilangkan harta karun dari map
+            collectibles.splice(i, 1);
+            score += 10; // Tambah 10 Skor
+            scoreUI.innerText = `Skor Harta: ${score}`;
+        }
+    }
+
+    // Kamera Mengekori Pemain
+    const cameraOffset = new THREE.Vector3(0, 5, -10);
+    cameraOffset.applyQuaternion(playerMesh.quaternion);
+    
+    camera.position.copy(playerMesh.position).add(cameraOffset);
+    camera.lookAt(playerMesh.position.clone().add(new THREE.Vector3(0, 1.5, 0)));
+}
+
+// ==========================================
+// 8. GAME LOOP
+// ==========================================
+function animate() {
+    requestAnimationFrame(animate);
+    updatePlayerMovement();
+    renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
