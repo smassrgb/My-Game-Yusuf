@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Kembara Nabi Yusuf A.S. - 3D Educational Game</title>
+    
     <style>
         * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', Roboto, -apple-system, sans-serif; background: #020617; color: #fff; touch-action: none; }
@@ -143,7 +144,6 @@
             max-width: 560px; text-align: left; line-height: 1.6;
         }
 
-        /* Flash Overlay for Miracle Light */
         #flash-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: #fff; opacity: 0; pointer-events: none; z-index: 20;
@@ -151,17 +151,15 @@
         }
     </style>
 
-    <!-- Three.js Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 </head>
 <body>
 
-    <!-- 3D Canvas Viewport -->
     <div id="canvas-container"></div>
     <div id="crosshair"></div>
     <div id="flash-overlay"></div>
 
-    <!-- HUD Overlay -->
     <div id="hud">
         <div class="hud-card">
             <span id="level-badge">STESEN 1</span>
@@ -174,17 +172,14 @@
         </div>
     </div>
 
-    <!-- Interaction Prompt -->
     <div id="interaction-prompt">Tekan [E] atau Sentuh untuk Interaksi</div>
 
-    <!-- Dialog Kisah & Pengajaran Bottom Box -->
     <div id="story-box">
         <div id="story-title">📜 Kisah Nabi Yusuf A.S.</div>
         <div id="story-text">Pilihan teks penceritaan...</div>
         <div id="story-hikmah">💡 Hikmah: Sabar dan ikhlas dalam menghadapi ujian.</div>
     </div>
 
-    <!-- Start Overlay Screen -->
     <div id="start-overlay">
         <h1>Kembara Nabi Yusuf A.S.</h1>
         <h3>Pengembaraan Interaktif 3D & Iktibar Al-Quran</h3>
@@ -200,7 +195,6 @@
         <button class="btn-action" style="max-width: 300px;" onclick="startGame()">MULA KEMBARA 🕌</button>
     </div>
 
-    <!-- Custom Modal Notice -->
     <div id="notice-modal" class="modal">
         <h2 id="notice-title">Tahniah!</h2>
         <p id="notice-body" style="color: #cbd5e1; line-height: 1.6; margin: 15px 0; font-size: 1rem;"></p>
@@ -208,7 +202,6 @@
         <button class="btn-action" onclick="closeNoticeModal()">Teruskan Kembara ➔</button>
     </div>
 
-    <!-- Settings Modal -->
     <div id="settings-modal" class="modal">
         <h2>⚙️ Tetapan Permainan</h2>
         <div style="margin: 20px 0; text-align: left;">
@@ -222,18 +215,22 @@
         <button class="btn-action" onclick="toggleSettings()">Tutup</button>
     </div>
 
-    <!-- Mobile Touch Controls Overlay -->
     <div id="mobile-controls">
         <div id="joystick-zone"><div id="joystick-knob"></div></div>
         <div id="btn-action-touch" class="mobile-btn" onclick="interactWithObject()">AMBIL</div>
         <div id="btn-jump" class="mobile-btn">LOMPAT</div>
     </div>
 
-    <!-- Background Audio Synthetic BGM Loop -->
+    <audio id="bg-music" loop preload="auto">
+        <source src="https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/background%20music.mp3" type="audio/mp3">
+    </audio>
+
     <script>
-        // Web Audio Sound Effects & Procedural Ambient Synthesizer
+        // Bersihkan localStorage lama secara automatik
+        try { localStorage.removeItem('yusuf_game_assets'); } catch(e) {}
+
         class SoundEngine {
-            constructor() { this.ctx = null; this.bgOsc = null; }
+            constructor() { this.ctx = null; }
             init() {
                 if (!this.ctx) {
                     const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -274,107 +271,133 @@
                     }, idx * 120);
                 });
             }
-            playActionSFX() {
-                if (!this.ctx) return;
-                const now = this.ctx.currentTime;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(300, now);
-                osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
-                gain.gain.setValueAtTime(0.2, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start(now);
-                osc.stop(now + 0.15);
-            }
         }
         const soundEngine = new SoundEngine();
 
-        // Configuration for 6 ISOLATED STATIONS (1000 units apart so they never overlap or see each other)
+        const RAW_REPO_URL = "https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/";
+
+        const GITHUB_MODELS = {
+            star: RAW_REPO_URL + encodeURIComponent("Star by Poly by Google - 9NXf-SDxJny.glb"),
+            sun: RAW_REPO_URL + encodeURIComponent("Sun by Zoe XR - 7diieNtphvD.glb"),
+            moon: RAW_REPO_URL + encodeURIComponent("Moon by Zoe XR - 10VNaCg1jYM.glb"),
+            tent: RAW_REPO_URL + encodeURIComponent("need_some_space.glb"),
+            palmTree: RAW_REPO_URL + encodeURIComponent("Palm tree by Poly by Google - 1l79utpMAy0.glb"),
+            well: RAW_REPO_URL + encodeURIComponent("Well by Quaternius - QlqncKYxXb.glb"),
+            bucketRope: RAW_REPO_URL + encodeURIComponent("Bag Open by Quaternius - rJuZexcuhU.glb"),
+            camel: RAW_REPO_URL + encodeURIComponent("Camel by Poly by Google - cyuwV4fg0B1.glb"),
+            tradeGood: RAW_REPO_URL + encodeURIComponent("Crate by Quaternius - 3OEFd1AWfa.glb"),
+            egyptianColumn: RAW_REPO_URL + encodeURIComponent("Pillar by Kay Lousberg - 1nt8n3rVKU.glb"),
+            jailDoor: RAW_REPO_URL + encodeURIComponent("Jail by Poly by Google - bF8mr05ofaY.glb"),
+            goldenKey: RAW_REPO_URL + encodeURIComponent("Chest by Quaternius - eEcIqgJzJ1.glb"),
+            granary: RAW_REPO_URL + encodeURIComponent("Storage House by Quaternius - d2ZQWcuhwR.glb"),
+            wheat: RAW_REPO_URL + encodeURIComponent("Field of wheat by Poly by Google - cNX9BRNG6ep.glb"),
+            throne: RAW_REPO_URL + encodeURIComponent("royal_throne_by_modenese.glb"),
+            yusufRobe: RAW_REPO_URL + encodeURIComponent("robe_cloth_for_iclone_and_character_creator.glb")
+        };
+
+        const gltfLoader = new THREE.GLTFLoader();
+
+        function createOrLoadAsset(modelKey, fallbackFn, position, targetSize = 1.5, rotation = {x:0, y:0, z:0}) {
+            const parentGroup = new THREE.Group();
+            parentGroup.position.copy(position);
+            parentGroup.rotation.set(rotation.x, rotation.y, rotation.z);
+
+            const fallbackMesh = fallbackFn();
+            parentGroup.add(fallbackMesh);
+
+            const modelUrl = GITHUB_MODELS[modelKey];
+
+            if (modelUrl) {
+                gltfLoader.load(
+                    modelUrl,
+                    (gltf) => {
+                        console.log(`✅ Berjaya muat GLB: ${modelKey}`);
+                        while(parentGroup.children.length > 0) {
+                            parentGroup.remove(parentGroup.children[0]);
+                        }
+                        const loadedMesh = gltf.scene;
+
+                        // Auto Center & Auto Scale
+                        const box = new THREE.Box3().setFromObject(loadedMesh);
+                        const center = box.getCenter(new THREE.Vector3());
+                        const size = box.getSize(new THREE.Vector3());
+                        
+                        loadedMesh.position.x -= center.x;
+                        loadedMesh.position.y -= box.min.y; // tapak berada pada tanah
+                        loadedMesh.position.z -= center.z;
+
+                        const maxDim = Math.max(size.x, size.y, size.z);
+                        if (maxDim > 0) {
+                            const scaleFactor = targetSize / maxDim;
+                            loadedMesh.scale.set(scaleFactor, scaleFactor, scaleFactor);
+                        }
+
+                        loadedMesh.traverse((child) => {
+                            if (child.isMesh) {
+                                child.castShadow = true;
+                                child.receiveShadow = true;
+                            }
+                        });
+
+                        parentGroup.add(loadedMesh);
+                    },
+                    undefined,
+                    (err) => {
+                        console.warn(`[Gagal Muat GLB: ${modelKey}] Guna Fallback Mesh`, err);
+                    }
+                );
+            }
+
+            scene.add(parentGroup);
+            return parentGroup;
+        }
+
         const levels = [
             {
-                id: 1,
-                badge: "STESEN 1",
-                name: "Mimpi 11 Bintang & Visi Malam",
+                id: 1, badge: "STESEN 1", name: "Mimpi 11 Bintang & Visi Malam",
                 taskText: "Tugasan: Kutip 11 Bintang & Selaraskan Bulan/Matahari",
-                targetCount: 12, // 11 stars + 1 sun/moon pedestal
-                currentCount: 0,
-                offset: { x: 0, z: 0 },
-                bgColor: 0x030712,
-                fogColor: 0x080f26,
-                lightColor: 0x4a69bd,
+                targetCount: 12, currentCount: 0, offset: { x: 0, z: 0 },
+                bgColor: 0x030712, fogColor: 0x080f26, lightColor: 0x4a69bd,
                 story: "Nabi Yusuf A.S. bermimpi melihat 11 bintang, matahari, dan bulan sujud kepadanya. Ayahanda baginda, Nabi Yaakub A.S., menasihati agar mimpi ini tidak diceritakan kepada saudara-saudaranya kerana dibatasi cemburu.",
                 hikmah: "💡 Hikmah: Menjaga rahsia dan kelebihan diri daripada sifat dengki orang lain. (Surah Yusuf: 4-5)"
             },
             {
-                id: 2,
-                badge: "STESEN 2",
-                name: "Perigi Tua Padang Pasir",
+                id: 2, badge: "STESEN 2", name: "Perigi Tua Padang Pasir",
                 taskText: "Tugasan: Ambil Tali & Baldi, Pasang di Perigi untuk Selamatkan Yusuf",
-                targetCount: 2, // 1 collect rope/bucket, 1 operate well winch
-                currentCount: 0,
-                offset: { x: 1000, z: 0 },
-                bgColor: 0x1f140e,
-                fogColor: 0x2e1e16,
-                lightColor: 0xe67e22,
+                targetCount: 2, currentCount: 0, offset: { x: 1000, z: 0 },
+                bgColor: 0x1f140e, fogColor: 0x2e1e16, lightColor: 0xe67e22,
                 story: "Saudara-saudara Nabi Yusuf membawa baginda ke padang pasir lalu mencampakkannya ke dalam perigi gelap. Allah SWT mententeramkan hati Nabi Yusuf bahawa baginda akan diselamatkan.",
                 hikmah: "💡 Hikmah: Kesabaran yang tinggi tatkala dizalimi oleh orang yang paling rapat. (Surah Yusuf: 15)"
             },
             {
-                id: 3,
-                badge: "STESEN 3",
-                name: "Kafilah Musafir & Dagangan",
+                id: 3, badge: "STESEN 3", name: "Kafilah Musafir & Dagangan",
                 taskText: "Tugasan: Kumpul 4 Barang Dagangan ke Dalam Karong Unta",
-                targetCount: 4,
-                currentCount: 0,
-                offset: { x: 2000, z: 0 },
-                bgColor: 0x241708,
-                fogColor: 0x3d2812,
-                lightColor: 0xf1c40f,
+                targetCount: 4, currentCount: 0, offset: { x: 2000, z: 0 },
+                bgColor: 0x241708, fogColor: 0x3d2812, lightColor: 0xf1c40f,
                 story: "Kafilah dagang lalu di perigi dan menimba air lalu menemui Nabi Yusuf. Baginda dibawa ke Mesir dan dijual sebagai hamba dengan harga yang murah kepada Al-Aziz (Menteri Mesir).",
                 hikmah: "💡 Hikmah: Perancangan Allah senantiasa indah walau bermula dengan kesusahan. (Surah Yusuf: 19-21)"
             },
             {
-                id: 4,
-                badge: "STESEN 4",
-                name: "Istana Mesir & Penjara",
+                id: 4, badge: "STESEN 4", name: "Istana Mesir & Penjara",
                 taskText: "Tugasan: Cari Kunci Emas, Buka Pintu Penjara & Nyalakan 3 Obor Kebenaran",
-                targetCount: 4, // 1 key + unlock + 2 torches
-                currentCount: 0,
-                offset: { x: 3000, z: 0 },
-                bgColor: 0x0f0a1c,
-                fogColor: 0x1d1433,
-                lightColor: 0x9b59b6,
+                targetCount: 4, currentCount: 0, offset: { x: 3000, z: 0 },
+                bgColor: 0x0f0a1c, fogColor: 0x1d1433, lightColor: 0x9b59b6,
                 story: "Di istana, Nabi Yusuf diuji dengan godaan isteri Al-Aziz. Baginda memilih dipenjarakan secara zalim daripada melakukan perbuatan maksiat dan dosa.",
                 hikmah: "💡 Hikmah: Memelihara kesucian dan kehormatan diri adalah keutamaan seorang mukmin. (Surah Yusuf: 33)"
             },
             {
-                id: 5,
-                badge: "STESEN 5",
-                name: "7 Tahun Subur & Gudang Gandum",
+                id: 5, badge: "STESEN 5", name: "7 Tahun Subur & Gudang Gandum",
                 taskText: "Tugasan: Tuai 7 Tangkai Gandum Emas & Simpan di Silo Gudang",
-                targetCount: 7,
-                currentCount: 0,
-                offset: { x: 4000, z: 0 },
-                bgColor: 0x0e1b19,
-                fogColor: 0x162c28,
-                lightColor: 0x2ecc71,
+                targetCount: 7, currentCount: 0, offset: { x: 4000, z: 0 },
+                bgColor: 0x0e1b19, fogColor: 0x162c28, lightColor: 0x2ecc71,
                 story: "Nabi Yusuf menafsirkan mimpi Raja mengenai 7 tahun kemakmuran dan 7 tahun kemarau. Baginda dilantik sebagai Bendahari Mesir untuk menguruskan bekalan makanan.",
                 hikmah: "💡 Hikmah: Kebijaksanaan, amanah, dan persediaan awal menghadapi krisis. (Surah Yusuf: 47-55)"
             },
             {
-                id: 6,
-                badge: "STESEN 6",
-                name: "Penyatuan Keluarga & Baju Yusuf",
+                id: 6, badge: "STESEN 6", name: "Penyatuan Keluarga & Baju Yusuf",
                 taskText: "Tugasan: Ambil Baju Yusuf A.S. & Usapkan pada Mata Bapa",
-                targetCount: 2, // 1 get shirt, 1 apply to father
-                currentCount: 0,
-                offset: { x: 5000, z: 0 },
-                bgColor: 0x131a24,
-                fogColor: 0x212e3e,
-                lightColor: 0xf39c12,
+                targetCount: 2, currentCount: 0, offset: { x: 5000, z: 0 },
+                bgColor: 0x131a24, fogColor: 0x212e3e, lightColor: 0xf39c12,
                 story: "Nabi Yusuf menyerahkan bajunya untuk diusapkan ke muka ayahnya yang buta kerana menangis, lalu penglihatannya kembali pulih. Baginda memaafkan saudara-saudaranya di takhta diraja.",
                 hikmah: "💡 Hikmah: Sifat pemaaf dan tidak menyimpan dendam membawa keberkatan & penyatuan. (Surah Yusuf: 92-100)"
             }
@@ -386,215 +409,83 @@
         let sensitivity = 1.0;
         let isMobile = false;
 
-        // Interactive Objects Array
         let interactableObjects = [];
         let activeNearbyObject = null;
-        let playerInventory = []; // State inventory like holding key, bucket, shirt
+        let playerInventory = [];
 
-        // Player Physics & Movement State (Human Standard Scale 1.7m)
         let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
         let isRunning = false, isGrounded = true;
         let velocity = new THREE.Vector3();
         let direction = new THREE.Vector3();
         let prevTime = performance.now();
 
-        // FPS Camera Rotation
         let yaw = 0, pitch = 0;
-
-        // Touch Joystick State
         let joystickActive = false;
         let joystickVector = { x: 0, y: 0 };
 
-        // --- HIGH QUALITY PROCEDURAL 3D GEOMETRY BUILDERS (1 Unit = 1 Meter Exact Scale) ---
-
-        // 1. Realistic Palm Tree (Height ~ 6.0m)
         function createPalmTree() {
             const group = new THREE.Group();
-            // Trunk
             const trunkGeo = new THREE.CylinderGeometry(0.2, 0.35, 5.5, 8);
             const trunkMat = new THREE.MeshStandardMaterial({ color: 0x6e4722, roughness: 0.9 });
             const trunk = new THREE.Mesh(trunkGeo, trunkMat);
             trunk.position.y = 2.75;
-            trunk.castShadow = true;
             group.add(trunk);
-
-            // Leaves Crown
-            const leafMat = new THREE.MeshStandardMaterial({ color: 0x1e824c, roughness: 0.6, side: THREE.DoubleSide });
-            for (let i = 0; i < 7; i++) {
-                const angle = (i / 7) * Math.PI * 2;
-                const leafGeo = new THREE.ConeGeometry(0.8, 3.2, 4);
-                const leaf = new THREE.Mesh(leafGeo, leafMat);
-                leaf.position.set(Math.cos(angle) * 1.2, 5.3, Math.sin(angle) * 1.2);
-                leaf.rotation.x = Math.PI / 3;
-                leaf.rotation.y = angle;
-                group.add(leaf);
-            }
             return group;
         }
 
-        // 2. Realistic Bedouin Tent (Height ~ 3.5m, Width ~ 5.0m)
         function createBedouinTent() {
             const group = new THREE.Group();
             const tentGeo = new THREE.ConeGeometry(3.2, 3.5, 4);
             const tentMat = new THREE.MeshStandardMaterial({ color: 0x7e22ce, roughness: 0.8 });
             const tent = new THREE.Mesh(tentGeo, tentMat);
             tent.position.y = 1.75;
-            tent.rotation.y = Math.PI / 4;
-            tent.castShadow = true;
             group.add(tent);
-
-            // Wooden entrance poles
-            const poleGeo = new THREE.CylinderGeometry(0.06, 0.06, 3.0);
-            const poleMat = new THREE.MeshStandardMaterial({ color: 0x422006 });
-            const p1 = new THREE.Mesh(poleGeo, poleMat);
-            p1.position.set(-1.2, 1.5, 2.0);
-            const p2 = p1.clone();
-            p2.position.set(1.2, 1.5, 2.0);
-            group.add(p1, p2);
-
             return group;
         }
 
-        // 3. Realistic Desert Camel (Height ~ 2.2m, Length ~ 2.5m)
         function createCamel() {
             const group = new THREE.Group();
             const bodyMat = new THREE.MeshStandardMaterial({ color: 0xc27c0e, roughness: 0.8 });
-
-            // Main Body
             const body = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 2.2), bodyMat);
             body.position.y = 1.6;
             group.add(body);
-
-            // Hump
-            const hump = new THREE.Mesh(new THREE.SphereGeometry(0.55, 12, 12), bodyMat);
-            hump.position.set(0, 2.4, 0.1);
-            group.add(hump);
-
-            // Neck & Head
-            const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.3, 1.4), bodyMat);
-            neck.position.set(0, 2.3, 1.0);
-            neck.rotation.x = -Math.PI / 6;
-            group.add(neck);
-
-            const head = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.35, 0.7), bodyMat);
-            head.position.set(0, 2.8, 1.35);
-            group.add(head);
-
-            // 4 Legs
-            const legGeo = new THREE.CylinderGeometry(0.1, 0.1, 1.4);
-            const positions = [[-0.4, 0.7, -0.8], [0.4, 0.7, -0.8], [-0.4, 0.7, 0.8], [0.4, 0.7, 0.8]];
-            positions.forEach(p => {
-                const leg = new THREE.Mesh(legGeo, bodyMat);
-                leg.position.set(p[0], p[1], p[2]);
-                group.add(leg);
-            });
-
             return group;
         }
 
-        // 4. Realistic Well with Winch Frame (Height ~ 2.2m, Radius ~ 1.2m)
         function createWell() {
             const group = new THREE.Group();
-            // Stone Rim
             const rimGeo = new THREE.CylinderGeometry(1.2, 1.3, 1.1, 16);
             const rimMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.9 });
             const rim = new THREE.Mesh(rimGeo, rimMat);
             rim.position.y = 0.55;
-            rim.castShadow = true;
             group.add(rim);
-
-            // Dark Hole
-            const holeGeo = new THREE.CylinderGeometry(0.95, 0.95, 1.12, 16);
-            const holeMat = new THREE.MeshBasicMaterial({ color: 0x020617 });
-            const hole = new THREE.Mesh(holeGeo, holeMat);
-            hole.position.y = 0.56;
-            group.add(hole);
-
-            // Wooden Support Pillars
-            const postGeo = new THREE.CylinderGeometry(0.08, 0.08, 2.2);
-            const postMat = new THREE.MeshStandardMaterial({ color: 0x451a03 });
-            const p1 = new THREE.Mesh(postGeo, postMat);
-            p1.position.set(-1.0, 1.6, 0);
-            const p2 = p1.clone();
-            p2.position.set(1.0, 1.6, 0);
-
-            const beamGeo = new THREE.CylinderGeometry(0.08, 0.08, 2.2);
-            const beam = new THREE.Mesh(beamGeo, postMat);
-            beam.rotation.z = Math.PI / 2;
-            beam.position.set(0, 2.6, 0);
-
-            group.add(p1, p2, beam);
             return group;
         }
 
-        // 5. Egyptian Grand Column (Height ~ 6.0m, Diameter ~ 0.8m)
         function createEgyptianPillar() {
             const group = new THREE.Group();
             const pillarMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.5 });
-            
-            // Base
-            const base = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.8, 0.6, 12), pillarMat);
-            base.position.y = 0.3;
-            group.add(base);
-
-            // Shaft
             const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.5, 5.0, 16), pillarMat);
-            shaft.position.y = 3.1;
-            shaft.castShadow = true;
+            shaft.position.y = 2.5;
             group.add(shaft);
-
-            // Top Capital
-            const capital = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.5, 0.6, 12), pillarMat);
-            capital.position.y = 5.8;
-            group.add(capital);
-
             return group;
         }
 
-        // 6. Granary Silo Building (Height ~ 5.5m)
         function createGranarySilo() {
             const group = new THREE.Group();
             const mat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.8 });
-            
             const body = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.5, 4.0, 16), mat);
             body.position.y = 2.0;
-            body.castShadow = true;
-
-            const roof = new THREE.Mesh(new THREE.ConeGeometry(2.7, 1.8, 16), new THREE.MeshStandardMaterial({ color: 0x78350f }));
-            roof.position.y = 4.9;
-
-            group.add(body, roof);
+            group.add(body);
             return group;
         }
 
-        // 7. Royal Throne Chair (Height ~ 2.6m)
         function createRoyalThrone() {
             const group = new THREE.Group();
             const goldMat = new THREE.MeshStandardMaterial({ color: 0xeab308, metalness: 0.6, roughness: 0.3 });
-            const redMat = new THREE.MeshStandardMaterial({ color: 0x9f1239, roughness: 0.5 });
-
-            // Platform
             const base = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.4, 2.4), goldMat);
             base.position.y = 0.2;
             group.add(base);
-
-            // Seat Cushion
-            const seat = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.3, 1.2), redMat);
-            seat.position.set(0, 0.55, 0);
-            group.add(seat);
-
-            // High Backrest
-            const back = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.0, 0.2), redMat);
-            back.position.set(0, 1.5, -0.5);
-            group.add(back);
-
-            // Gold Frame Pillars
-            const p1 = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.2), goldMat);
-            p1.position.set(-0.6, 1.5, -0.5);
-            const p2 = p1.clone();
-            p2.position.set(0.6, 1.5, -0.5);
-            group.add(p1, p2);
-
             return group;
         }
 
@@ -606,7 +497,7 @@
             scene.fog = new THREE.FogExp2(levels[0].fogColor, 0.015);
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 1.7, 8); // Human Eye Height = 1.7m
+            camera.position.set(0, 1.7, 8);
 
             renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -615,8 +506,7 @@
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             container.appendChild(renderer.domElement);
 
-            // Lighting Setup
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
             scene.add(ambientLight);
 
             mainDirLight = new THREE.DirectionalLight(0xfffaed, 1.2);
@@ -628,23 +518,27 @@
             levelPointLight.position.set(0, 5, 0);
             scene.add(levelPointLight);
 
-            // Build all 6 ISOLATED STATIONS
+            const terrainUrl = RAW_REPO_URL + encodeURIComponent("red_sculpted_plains_-_terrain.glb");
+            gltfLoader.load(terrainUrl, (gltf) => {
+                const terrain = gltf.scene;
+                terrain.position.set(2500, -2, 0);
+                terrain.scale.set(30, 15, 30);
+                scene.add(terrain);
+            });
+
             buildIsolatedStations();
             setupControls();
             detectMobile();
 
             updateEnvironmentAtmosphere();
-
             window.addEventListener('resize', onWindowResize);
         }
 
         function buildIsolatedStations() {
-            // Build separate ground platforms & specific props for each station
             levels.forEach((lvl, idx) => {
                 const ox = lvl.offset.x;
                 const oz = lvl.offset.z;
 
-                // Ground Terrain for Station (60m x 60m)
                 const groundGeo = new THREE.PlaneGeometry(70, 70);
                 let groundColor = 0x1e293b;
                 if (idx === 0) groundColor = 0x0f172a;
@@ -661,7 +555,6 @@
                 ground.receiveShadow = true;
                 scene.add(ground);
 
-                // Surrounding Mountain Rocks / Boundary Walls to isolate view
                 for (let i = 0; i < 16; i++) {
                     const angle = (i / 16) * Math.PI * 2;
                     const rx = ox + Math.cos(angle) * 32;
@@ -673,253 +566,127 @@
                     scene.add(rock);
                 }
 
-                // --- STESEN 1: MIMPI 11 BINTANG (Oasis Camp Night) ---
+                // STESEN 1
                 if (idx === 0) {
-                    const tent = createBedouinTent();
-                    tent.position.set(ox - 8, 0, oz - 6);
-                    scene.add(tent);
+                    createOrLoadAsset('tent', createBedouinTent, new THREE.Vector3(ox - 8, 0, oz - 6), 5.0);
 
                     for (let p = 0; p < 6; p++) {
-                        const palm = createPalmTree();
                         const pAngle = (p / 6) * Math.PI * 2;
-                        palm.position.set(ox + Math.cos(pAngle) * 16, 0, oz + Math.sin(pAngle) * 16);
-                        scene.add(palm);
+                        createOrLoadAsset('palmTree', createPalmTree, new THREE.Vector3(ox + Math.cos(pAngle) * 16, 0, oz + Math.sin(pAngle) * 16), 6.0);
                     }
 
-                    // 11 Floating Stars (0.4m radius)
                     for (let s = 0; s < 11; s++) {
-                        const starGeo = new THREE.OctahedronGeometry(0.35, 0);
-                        const starMat = new THREE.MeshStandardMaterial({ color: 0xf1c40f, emissive: 0xf39c12, roughness: 0.2 });
-                        const star = new THREE.Mesh(starGeo, starMat);
-                        
                         const sAngle = (s / 11) * Math.PI * 2;
                         const sx = ox + Math.cos(sAngle) * 9;
                         const sz = oz + Math.sin(sAngle) * 9;
-                        star.position.set(sx, 1.4, sz);
-                        scene.add(star);
+                        
+                        const starAsset = createOrLoadAsset('star', () => {
+                            return new THREE.Mesh(new THREE.OctahedronGeometry(0.35, 0), new THREE.MeshStandardMaterial({ color: 0xf1c40f, emissive: 0xf39c12 }));
+                        }, new THREE.Vector3(sx, 1.4, sz), 1.2);
 
-                        interactableObjects.push({
-                            mesh: star,
-                            level: 1,
-                            type: 'star',
-                            collected: false,
-                            initialY: 1.4
-                        });
+                        interactableObjects.push({ mesh: starAsset, level: 1, type: 'star', collected: false, initialY: 1.4 });
                     }
 
-                    // Sun & Moon Visi Pedestal (12th task item)
-                    const pedestalMat = new THREE.MeshStandardMaterial({ color: 0xeab308, metalness: 0.5 });
-                    const sunMoonGroup = new THREE.Group();
-                    const sunMesh = new THREE.Mesh(new THREE.SphereGeometry(0.6, 16, 16), new THREE.MeshStandardMaterial({ color: 0xf97316, emissive: 0xea580c }));
-                    sunMesh.position.set(-0.7, 1.5, 0);
-                    const moonMesh = new THREE.Mesh(new THREE.SphereGeometry(0.45, 16, 16), new THREE.MeshStandardMaterial({ color: 0xfef08a, emissive: 0xfde047 }));
-                    moonMesh.position.set(0.7, 1.5, 0);
-                    sunMoonGroup.add(sunMesh, moonMesh);
-                    sunMoonGroup.position.set(ox, 0, oz - 10);
-                    scene.add(sunMoonGroup);
+                    const sunMoonGroup = createOrLoadAsset('sun', () => {
+                        const grp = new THREE.Group();
+                        const sun = new THREE.Mesh(new THREE.SphereGeometry(0.6, 16, 16), new THREE.MeshStandardMaterial({ color: 0xf97316, emissive: 0xea580c }));
+                        grp.add(sun);
+                        return grp;
+                    }, new THREE.Vector3(ox, 1.5, oz - 10), 2.5);
 
-                    interactableObjects.push({
-                        mesh: sunMoonGroup,
-                        level: 1,
-                        type: 'sun_moon',
-                        collected: false,
-                        initialY: 0
-                    });
+                    interactableObjects.push({ mesh: sunMoonGroup, level: 1, type: 'sun_moon', collected: false, initialY: 1.5 });
                 }
 
-                // --- STESEN 2: PERIGI TUA (Desert Canyon) ---
+                // STESEN 2
                 if (idx === 1) {
-                    const well = createWell();
-                    well.position.set(ox, 0, oz);
-                    scene.add(well);
+                    const wellObj = createOrLoadAsset('well', createWell, new THREE.Vector3(ox, 0, oz), 3.0);
 
-                    // Rope & Bucket Item on ground
-                    const bucketGroup = new THREE.Group();
-                    const bucketMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.2, 0.5, 12), new THREE.MeshStandardMaterial({ color: 0xb45309 }));
-                    bucketMesh.position.y = 0.25;
-                    const ropeMesh = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.06, 8, 12), new THREE.MeshStandardMaterial({ color: 0xd97706 }));
-                    ropeMesh.rotation.x = Math.PI / 2;
-                    ropeMesh.position.set(0.2, 0.1, 0);
-                    bucketGroup.add(bucketMesh, ropeMesh);
-                    bucketGroup.position.set(ox - 6, 0, oz + 4);
-                    scene.add(bucketGroup);
+                    const bucketGroup = createOrLoadAsset('bucketRope', () => {
+                        return new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.2, 0.5, 12), new THREE.MeshStandardMaterial({ color: 0xb45309 }));
+                    }, new THREE.Vector3(ox - 6, 0.2, oz + 4), 1.0);
 
-                    interactableObjects.push({
-                        mesh: bucketGroup,
-                        level: 2,
-                        type: 'rope_bucket',
-                        collected: false,
-                        initialY: 0
-                    });
-
-                    // Well Winch Trigger
-                    interactableObjects.push({
-                        mesh: well,
-                        level: 2,
-                        type: 'well_winch',
-                        collected: false,
-                        initialY: 0
-                    });
+                    interactableObjects.push({ mesh: bucketGroup, level: 2, type: 'rope_bucket', collected: false, initialY: 0.2 });
+                    interactableObjects.push({ mesh: wellObj, level: 2, type: 'well_winch', collected: false, initialY: 0 });
                 }
 
-                // --- STESEN 3: KAFILAH MUSAFIR (Merchant Oasis) ---
+                // STESEN 3
                 if (idx === 2) {
-                    const camel1 = createCamel();
-                    camel1.position.set(ox - 4, 0, oz - 4);
-                    const camel2 = createCamel();
-                    camel2.position.set(ox + 4, 0, oz - 4);
-                    scene.add(camel1, camel2);
+                    createOrLoadAsset('camel', createCamel, new THREE.Vector3(ox - 4, 0, oz - 4), 3.0);
+                    createOrLoadAsset('camel', createCamel, new THREE.Vector3(ox + 4, 0, oz - 4), 3.0);
 
                     const tradeItems = [
-                        { name: 'Kurma Emas', color: 0x78350f, pos: { x: ox - 7, z: oz + 5 } },
-                        { name: 'Rempah Istana', color: 0xd97706, pos: { x: ox + 7, z: oz + 5 } },
-                        { name: 'Bekalan Air Oasis', color: 0x0284c7, pos: { x: ox - 3, z: oz + 7 } },
-                        { name: 'Sutera Dagangan', color: 0xc026d3, pos: { x: ox + 3, z: oz + 7 } }
+                        { pos: { x: ox - 7, z: oz + 5 } }, { pos: { x: ox + 7, z: oz + 5 } },
+                        { pos: { x: ox - 3, z: oz + 7 } }, { pos: { x: ox + 3, z: oz + 7 } }
                     ];
 
                     tradeItems.forEach((item) => {
-                        const crate = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), new THREE.MeshStandardMaterial({ color: item.color, roughness: 0.6 }));
-                        crate.position.set(item.pos.x, 0.3, item.pos.z);
-                        scene.add(crate);
+                        const crateObj = createOrLoadAsset('tradeGood', () => {
+                            return new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.6 }));
+                        }, new THREE.Vector3(item.pos.x, 0.3, item.pos.z), 1.0);
 
-                        interactableObjects.push({
-                            mesh: crate,
-                            level: 3,
-                            type: 'trade_good',
-                            collected: false,
-                            initialY: 0.3
-                        });
+                        interactableObjects.push({ mesh: crateObj, level: 3, type: 'trade_good', collected: false, initialY: 0.3 });
                     });
                 }
 
-                // --- STESEN 4: ISTANA MESIR & PENJARA ---
+                // STESEN 4
                 if (idx === 3) {
-                    // Palace Columns Corridor
                     for (let col = -2; col <= 2; col += 2) {
-                        const pLeft = createEgyptianPillar();
-                        pLeft.position.set(ox - 6, 0, oz + col * 4);
-                        const pRight = createEgyptianPillar();
-                        pRight.position.set(ox + 6, 0, oz + col * 4);
-                        scene.add(pLeft, pRight);
+                        createOrLoadAsset('egyptianColumn', createEgyptianPillar, new THREE.Vector3(ox - 6, 0, oz + col * 4), 5.0);
+                        createOrLoadAsset('egyptianColumn', createEgyptianPillar, new THREE.Vector3(ox + 6, 0, oz + col * 4), 5.0);
                     }
 
-                    // Prison Cell Wall & Door
-                    const jailGroup = new THREE.Group();
-                    const wallMesh = new THREE.Mesh(new THREE.BoxGeometry(8, 3.5, 0.3), new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.9 }));
-                    wallMesh.position.set(0, 1.75, 0);
+                    const jailDoorObj = createOrLoadAsset('jailDoor', () => {
+                        return new THREE.Mesh(new THREE.BoxGeometry(8, 3.5, 0.3), new THREE.MeshStandardMaterial({ color: 0x334155 }));
+                    }, new THREE.Vector3(ox, 0, oz - 8), 4.5);
 
-                    // Iron Bars
-                    for (let b = -1.5; b <= 1.5; b += 0.4) {
-                        const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 3.2), new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.8 }));
-                        bar.position.set(b, 1.6, 0);
-                        jailGroup.add(bar);
-                    }
-                    jailGroup.add(wallMesh);
-                    jailGroup.position.set(ox, 0, oz - 8);
-                    scene.add(jailGroup);
+                    const keyObj = createOrLoadAsset('goldenKey', () => {
+                        return new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.06, 8, 12), new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.8 }));
+                    }, new THREE.Vector3(ox + 8, 0.8, oz + 2), 1.0);
 
-                    // Golden Key Item
-                    const keyMesh = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.06, 8, 12), new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.8 }));
-                    keyMesh.position.set(ox + 8, 0.8, oz + 2);
-                    scene.add(keyMesh);
+                    interactableObjects.push({ mesh: keyObj, level: 4, type: 'golden_key', collected: false, initialY: 0.8 });
+                    interactableObjects.push({ mesh: jailDoorObj, level: 4, type: 'jail_door', collected: false, initialY: 0 });
 
-                    interactableObjects.push({
-                        mesh: keyMesh,
-                        level: 4,
-                        type: 'golden_key',
-                        collected: false,
-                        initialY: 0.8
-                    });
-
-                    // Prison Door Trigger
-                    interactableObjects.push({
-                        mesh: jailGroup,
-                        level: 4,
-                        type: 'jail_door',
-                        collected: false,
-                        initialY: 0
-                    });
-
-                    // 2 Wall Torches
                     for (let t = 0; t < 2; t++) {
-                        const torchMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.05, 0.8), new THREE.MeshStandardMaterial({ color: 0xd97706, emissive: 0xb45309 }));
                         const tx = (t === 0) ? ox - 5 : ox + 5;
-                        torchMesh.position.set(tx, 1.8, oz - 4);
-                        scene.add(torchMesh);
+                        const torchObj = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.05, 0.8), new THREE.MeshStandardMaterial({ color: 0xd97706 }));
+                        torchObj.position.set(tx, 1.8, oz - 4);
+                        scene.add(torchObj);
 
-                        interactableObjects.push({
-                            mesh: torchMesh,
-                            level: 4,
-                            type: 'torch',
-                            collected: false,
-                            initialY: 1.8
-                        });
+                        interactableObjects.push({ mesh: torchObj, level: 4, type: 'torch', collected: false, initialY: 1.8 });
                     }
                 }
 
-                // --- STESEN 5: GUDANG GANDUM ---
+                // STESEN 5
                 if (idx === 4) {
-                    const granary = createGranarySilo();
-                    granary.position.set(ox, 0, oz - 8);
-                    scene.add(granary);
+                    createOrLoadAsset('granary', createGranarySilo, new THREE.Vector3(ox, 0, oz - 8), 5.0);
 
-                    // 7 Golden Wheat Stalks
                     for (let w = 0; w < 7; w++) {
-                        const wheatGroup = new THREE.Group();
-                        const stalk = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.0), new THREE.MeshStandardMaterial({ color: 0xeab308 }));
-                        stalk.position.y = 0.5;
-                        const head = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.5, 6), new THREE.MeshStandardMaterial({ color: 0xfacc15 }));
-                        head.position.y = 1.0;
-                        wheatGroup.add(stalk, head);
-
                         const wx = ox - 9 + (w * 3);
                         const wz = oz + 4;
-                        wheatGroup.position.set(wx, 0, wz);
-                        scene.add(wheatGroup);
+                        const wheatObj = createOrLoadAsset('wheat', () => {
+                            const stalk = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.0), new THREE.MeshStandardMaterial({ color: 0xeab308 }));
+                            stalk.position.y = 0.5;
+                            return stalk;
+                        }, new THREE.Vector3(wx, 0, wz), 1.5);
 
-                        interactableObjects.push({
-                            mesh: wheatGroup,
-                            level: 5,
-                            type: 'wheat',
-                            collected: false,
-                            initialY: 0
-                        });
+                        interactableObjects.push({ mesh: wheatObj, level: 5, type: 'wheat', collected: false, initialY: 0 });
                     }
                 }
 
-                // --- STESEN 6: PENYATUAN & BAJU YUSUF A.S. ---
+                // STESEN 6
                 if (idx === 5) {
-                    const throne = createRoyalThrone();
-                    throne.position.set(ox, 0, oz - 8);
-                    scene.add(throne);
+                    createOrLoadAsset('throne', createRoyalThrone, new THREE.Vector3(ox, 0, oz - 8), 3.5);
 
-                    // Miraculous Shirt / Robe of Yusuf A.S. (Floating 0.8m)
-                    const robeGroup = new THREE.Group();
-                    const robeMesh = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.0, 0.2), new THREE.MeshStandardMaterial({ color: 0xf8fafc, emissive: 0xe2e8f0, roughness: 0.2 }));
-                    robeGroup.add(robeMesh);
-                    robeGroup.position.set(ox - 6, 1.2, oz + 2);
-                    scene.add(robeGroup);
+                    const robeObj = createOrLoadAsset('yusufRobe', () => {
+                        return new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.0, 0.2), new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.2 }));
+                    }, new THREE.Vector3(ox - 6, 1.2, oz + 2), 1.2);
 
-                    interactableObjects.push({
-                        mesh: robeGroup,
-                        level: 6,
-                        type: 'yusuf_robe',
-                        collected: false,
-                        initialY: 1.2
-                    });
-
-                    // Jacob's Healing Position (Nabi Yaakub's Seat)
                     const jacobSeat = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.6, 1.2), new THREE.MeshStandardMaterial({ color: 0x475569 }));
                     jacobSeat.position.set(ox + 6, 0.3, oz + 2);
                     scene.add(jacobSeat);
 
-                    interactableObjects.push({
-                        mesh: jacobSeat,
-                        level: 6,
-                        type: 'father_jacob',
-                        collected: false,
-                        initialY: 0.3
-                    });
+                    interactableObjects.push({ mesh: robeObj, level: 6, type: 'yusuf_robe', collected: false, initialY: 1.2 });
+                    interactableObjects.push({ mesh: jacobSeat, level: 6, type: 'father_jacob', collected: false, initialY: 0.3 });
                 }
             });
         }
@@ -927,13 +694,11 @@
         function updateEnvironmentAtmosphere() {
             const curLvl = levels[currentLevelIndex];
 
-            // Smooth background color & fog transition
             scene.background.setHex(curLvl.bgColor);
             scene.fog.color.setHex(curLvl.fogColor);
             levelPointLight.color.setHex(curLvl.lightColor);
             levelPointLight.position.set(curLvl.offset.x, 6, curLvl.offset.z);
 
-            // UI HUD updates
             document.getElementById('level-badge').innerText = curLvl.badge;
             document.getElementById('level-title').innerText = curLvl.name;
             document.getElementById('task-tracker').innerText = `${curLvl.taskText} (${curLvl.currentCount} / ${curLvl.targetCount})`;
@@ -960,7 +725,7 @@
             for (let obj of interactableObjects) {
                 if (obj.level === currentLvl.id && !obj.collected) {
                     let dist = camera.position.distanceTo(obj.mesh.position);
-                    if (dist < 3.2) { // 3.2m interaction threshold
+                    if (dist < 3.2) {
                         activeNearbyObject = obj;
                         break;
                     }
@@ -984,38 +749,28 @@
 
         function interactWithObject() {
             if (!activeNearbyObject) return;
-
             const curLvl = levels[currentLevelIndex];
 
-            // Specific multi-step puzzle interactions
-            if (activeNearbyObject.type === 'well_winch') {
-                if (!playerInventory.includes('rope_bucket')) {
-                    showNoticeModal("⚠️ PERTOLONGAN PERIGI", "Anda perlu mencari Tali & Baldi terlebih dahulu di sekeliling kawasan padang pasir ini!");
-                    return;
-                }
+            if (activeNearbyObject.type === 'well_winch' && !playerInventory.includes('rope_bucket')) {
+                showNoticeModal("⚠️ PERTOLONGAN PERIGI", "Anda perlu mencari Tali & Baldi terlebih dahulu di sekeliling kawasan padang pasir ini!");
+                return;
             }
 
-            if (activeNearbyObject.type === 'jail_door') {
-                if (!playerInventory.includes('golden_key')) {
-                    showNoticeModal("⚠️ PINTU TERKUNCI", "Pintu penjara ini dikunci rapat. Cari Kunci Emas di kawasan istana terlebih dahulu!");
-                    return;
-                }
+            if (activeNearbyObject.type === 'jail_door' && !playerInventory.includes('golden_key')) {
+                showNoticeModal("⚠️ PINTU TERKUNCI", "Pintu penjara ini dikunci rapat. Cari Kunci Emas di kawasan istana terlebih dahulu!");
+                return;
             }
 
-            if (activeNearbyObject.type === 'father_jacob') {
-                if (!playerInventory.includes('yusuf_robe')) {
-                    showNoticeModal("⚠️ BAJU NABI YUSUF", "Ambil Baju Yusuf A.S. terlebih dahulu untuk diusapkan ke muka ayahanda Nabi Yaakub A.S.");
-                    return;
-                }
+            if (activeNearbyObject.type === 'father_jacob' && !playerInventory.includes('yusuf_robe')) {
+                showNoticeModal("⚠️ BAJU NABI YUSUF", "Ambil Baju Yusuf A.S. terlebih dahulu untuk diusapkan ke muka ayahanda Nabi Yaakub A.S.");
+                return;
             }
 
-            // Collect or perform action
             activeNearbyObject.collected = true;
             if (activeNearbyObject.type === 'rope_bucket') playerInventory.push('rope_bucket');
             if (activeNearbyObject.type === 'golden_key') playerInventory.push('golden_key');
             if (activeNearbyObject.type === 'yusuf_robe') playerInventory.push('yusuf_robe');
 
-            // Miracle Light Effect for Level 6
             if (activeNearbyObject.type === 'father_jacob') {
                 const flash = document.getElementById('flash-overlay');
                 flash.style.opacity = '1';
@@ -1028,7 +783,6 @@
             curLvl.currentCount++;
             document.getElementById('task-tracker').innerText = `${curLvl.taskText} (${curLvl.currentCount} / ${curLvl.targetCount})`;
 
-            // Check Level Completion
             if (curLvl.currentCount >= curLvl.targetCount) {
                 soundEngine.playWinSFX();
 
@@ -1042,10 +796,8 @@
                     currentLevelIndex++;
                     const nextLvl = levels[currentLevelIndex];
 
-                    // Teleport Player to isolated next station offset
                     camera.position.set(nextLvl.offset.x, 1.7, nextLvl.offset.z + 8);
                     yaw = 0; pitch = 0;
-
                     updateEnvironmentAtmosphere();
                 } else {
                     showNoticeModal(
@@ -1077,7 +829,6 @@
         }
 
         function setupControls() {
-            // Keyboard Controls
             document.addEventListener('keydown', (e) => {
                 switch(e.code) {
                     case 'KeyW': case 'ArrowUp': moveForward = true; break;
@@ -1105,7 +856,6 @@
                 }
             });
 
-            // PC Mouse Drag Look Controls
             const canvas = renderer.domElement;
             let isMouseDown = false;
             let lastMouseX = 0, lastMouseY = 0;
@@ -1163,7 +913,6 @@
                         let knobY = Math.sin(angle) * dist;
 
                         knob.style.transform = `translate(${knobX}px, ${knobY}px)`;
-
                         joystickVector.x = knobX / 45;
                         joystickVector.y = knobY / 45;
                     }
@@ -1246,22 +995,19 @@
                 camera.position.z += moveVector.z * speed * delta;
             }
 
-            // Gravity Physics
             velocity.y -= 0.38 * delta;
             camera.position.y += velocity.y;
 
             if (camera.position.y <= 1.7) {
                 velocity.y = 0;
-                camera.position.y = 1.7; // Standard Eye Level 1.7m
+                camera.position.y = 1.7;
                 isGrounded = true;
             }
 
-            // Restrict bounds to current isolated station platform (30m bounds radius)
             const curLvl = levels[currentLevelIndex];
             camera.position.x = Math.max(curLvl.offset.x - 28, Math.min(curLvl.offset.x + 28, camera.position.x));
             camera.position.z = Math.max(curLvl.offset.z - 28, Math.min(curLvl.offset.z + 28, camera.position.z));
 
-            // Idle Floating Animation for interactive stars/robe
             const time = performance.now() * 0.003;
             interactableObjects.forEach((obj) => {
                 if (!obj.collected) {
@@ -1283,13 +1029,17 @@
             prevTime = time;
 
             updatePlayerPhysics(delta);
-
             renderer.render(scene, camera);
         }
 
         function startGame() {
             soundEngine.init();
             document.getElementById('start-overlay').style.display = 'none';
+            const bgAudio = document.getElementById('bg-music');
+            if (bgAudio) {
+                bgAudio.volume = 0.5;
+                bgAudio.play().catch(e => console.log("BGM Autoplay disekat oleh browser"));
+            }
         }
 
         function toggleSettings() {
@@ -1298,7 +1048,10 @@
         }
 
         function updateAudioVolume() {
-            // Audio volume control
+            const bgAudio = document.getElementById('bg-music');
+            if (bgAudio) {
+                bgAudio.volume = parseFloat(document.getElementById('volume-slider').value);
+            }
         }
 
         function updateSensitivity() {
