@@ -2,63 +2,102 @@
 <html lang="ms">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Kembara Nabi Yusuf A.S. - 3D FPS Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kembara Nabi Yusuf A.S. - 3D Educational Game</title>
     <style>
-        * { box-sizing: border-box; user-select: none; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #000; color: #fff; }
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', Roboto, -apple-system, sans-serif; background: #020617; color: #fff; touch-action: none; }
 
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
 
         /* Crosshair FPS */
         #crosshair {
             position: absolute; top: 50%; left: 50%; width: 10px; height: 10px;
-            background: rgba(255, 255, 255, 0.7); border-radius: 50%;
+            background: rgba(255, 255, 255, 0.9); border-radius: 50%;
             transform: translate(-50%, -50%); pointer-events: none; z-index: 5;
-            border: 2px solid rgba(0,0,0,0.5);
+            border: 2px solid rgba(0,0,0,0.6); box-shadow: 0 0 12px rgba(241,196,15,0.9);
         }
 
-        /* HUD Bar Top */
+        /* HUD Top Bar */
         #hud {
-            position: absolute; top: 15px; left: 15px; right: 15px;
-            display: flex; justify-content: space-between; align-items: center;
+            position: absolute; top: 16px; left: 16px; right: 16px;
+            display: flex; justify-content: space-between; align-items: flex-start;
             z-index: 6; pointer-events: none;
         }
 
         .hud-card {
-            background: rgba(0, 0, 0, 0.65); border: 2px solid #f1c40f;
-            padding: 10px 20px; border-radius: 12px; backdrop-filter: blur(5px);
-            pointer-events: auto;
+            background: rgba(15, 23, 42, 0.92); border: 2px solid #f1c40f;
+            padding: 14px 22px; border-radius: 18px; backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px); pointer-events: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7); max-width: 460px;
         }
 
-        #passport-btn, #settings-btn {
-            background: #e67e22; border: none; color: #fff; padding: 8px 15px;
-            border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s;
+        #level-badge {
+            display: inline-block; background: linear-gradient(135deg, #d35400, #e67e22); color: #fff; font-size: 0.78rem;
+            font-weight: 800; padding: 4px 10px; border-radius: 8px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.8px;
         }
-        #passport-btn:hover, #settings-btn:hover { background: #d35400; }
 
-        /* Modals / Windows */
+        #level-title { font-weight: 800; color: #f1c40f; font-size: 1.25rem; letter-spacing: 0.5px; line-height: 1.2; }
+        #task-tracker { font-size: 0.98rem; color: #2ecc71; font-weight: 700; margin-top: 6px; display: flex; align-items: center; gap: 6px; }
+
+        .btn-ui {
+            background: linear-gradient(135deg, #d35400, #e67e22); border: none; color: #fff; padding: 12px 20px;
+            border-radius: 14px; font-weight: bold; cursor: pointer; transition: 0.2s; pointer-events: auto;
+            box-shadow: 0 4px 16px rgba(211, 84, 0, 0.4); font-size: 0.92rem; margin-left: 8px; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn-ui:hover { transform: translateY(-2px) scale(1.03); background: linear-gradient(135deg, #e67e22, #f39c12); }
+
+        /* Story Dialogue Box */
+        #story-box {
+            position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.94); border: 2px solid #f1c40f;
+            border-radius: 20px; padding: 20px 26px; width: 92%; max-width: 720px;
+            z-index: 12; backdrop-filter: blur(14px); box-shadow: 0 12px 35px rgba(0,0,0,0.8);
+            display: none; animation: slideUp 0.35s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translate(-50%, 30px); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+
+        #story-title { color: #f1c40f; font-size: 1.15rem; font-weight: bold; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        #story-text { color: #e2e8f0; font-size: 0.96rem; line-height: 1.55; margin-bottom: 12px; }
+        #story-hikmah { background: rgba(241, 196, 15, 0.12); border-left: 4px solid #f1c40f; padding: 10px 14px; font-size: 0.9rem; color: #f39c12; border-radius: 0 10px 10px 0; font-style: italic; font-weight: 600; }
+
+        /* Interaction Prompt */
+        #interaction-prompt {
+            position: absolute; bottom: 180px; left: 50%; transform: translateX(-50%);
+            background: linear-gradient(135deg, #f1c40f, #f39c12); color: #0f172a; padding: 12px 28px;
+            border-radius: 30px; font-weight: 800; font-size: 1.05rem;
+            display: none; z-index: 10; box-shadow: 0 0 25px rgba(241, 196, 15, 0.85);
+            pointer-events: none; animation: pulse 1.2s infinite; letter-spacing: 0.5px; text-align: center;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.06); }
+        }
+
+        /* Modals */
         .modal {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(15, 15, 15, 0.95); border: 2px solid #f1c40f;
-            border-radius: 15px; padding: 25px; width: 90%; max-width: 550px;
-            z-index: 20; display: none; box-shadow: 0 0 25px rgba(241, 196, 15, 0.3);
+            background: rgba(15, 23, 42, 0.97); border: 2px solid #f1c40f;
+            border-radius: 24px; padding: 30px; width: 92%; max-width: 550px;
+            z-index: 25; display: none; box-shadow: 0 0 50px rgba(241, 196, 15, 0.4);
+            backdrop-filter: blur(16px); text-align: center;
         }
 
-        .modal h2 { color: #f1c40f; margin-top: 0; text-align: center; }
-        .modal p { font-size: 0.95rem; line-height: 1.5; color: #ddd; }
-
-        input[type="text"] {
-            width: 100%; padding: 10px; margin: 10px 0; border-radius: 8px;
-            border: 1px solid #f1c40f; background: #222; color: #fff; font-size: 1rem;
-        }
+        .modal h2 { color: #f1c40f; margin-top: 0; font-size: 1.7rem; font-weight: 800; }
 
         .btn-action {
-            width: 100%; padding: 12px; background: #27ae60; border: none;
-            color: #fff; font-weight: bold; font-size: 1rem; border-radius: 8px;
-            cursor: pointer; margin-top: 10px;
+            width: 100%; padding: 15px; background: linear-gradient(135deg, #27ae60, #2ecc71); border: none;
+            color: #fff; font-weight: bold; font-size: 1.05rem; border-radius: 14px;
+            cursor: pointer; margin-top: 18px; transition: all 0.2s;
+            box-shadow: 0 4px 18px rgba(39, 174, 96, 0.45);
         }
-        .btn-action:hover { background: #219150; }
+        .btn-action:hover { background: linear-gradient(135deg, #2ecc71, #27ae60); transform: translateY(-2px); }
+        .btn-action:active { transform: scale(0.98); }
 
         /* Mobile Controls */
         #mobile-controls {
@@ -66,442 +105,1200 @@
             z-index: 10; pointer-events: none; display: none;
         }
         #joystick-zone {
-            position: absolute; bottom: 20px; left: 20px; width: 120px; height: 120px;
+            position: absolute; bottom: 20px; left: 20px; width: 130px; height: 130px;
             background: rgba(255, 255, 255, 0.15); border-radius: 50%;
             pointer-events: auto; border: 2px solid rgba(255,255,255,0.3);
+            touch-action: none;
         }
         #joystick-knob {
-            position: absolute; top: 35px; left: 35px; width: 50px; height: 50px;
-            background: #f1c40f; border-radius: 50%; opacity: 0.8;
+            position: absolute; top: 40px; left: 40px; width: 50px; height: 50px;
+            background: #f1c40f; border-radius: 50%; opacity: 0.9; pointer-events: none;
+            box-shadow: 0 0 15px rgba(241, 196, 15, 0.9);
         }
         .mobile-btn {
-            position: absolute; width: 65px; height: 65px; background: rgba(0,0,0,0.6);
+            position: absolute; width: 72px; height: 72px; background: rgba(15, 23, 42, 0.88);
             border: 2px solid #f1c40f; border-radius: 50%; color: #fff;
-            font-weight: bold; display: flex; justify-content: center; align-items: center;
-            pointer-events: auto; font-size: 0.8rem;
+            font-weight: 800; display: flex; justify-content: center; align-items: center;
+            pointer-events: auto; font-size: 0.9rem; backdrop-filter: blur(6px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.6);
         }
-        #btn-jump { bottom: 30px; right: 20px; }
-        #btn-run { bottom: 30px; right: 95px; }
+        .mobile-btn:active { background: #f1c40f; color: #000; }
+        #btn-action-touch { bottom: 25px; right: 20px; background: rgba(39, 174, 96, 0.95); border-color: #2ecc71; }
+        #btn-jump { bottom: 25px; right: 105px; }
 
-        /* Settings Screen */
-        .setting-row { margin: 15px 0; display: flex; justify-content: space-between; align-items: center; }
-        .setting-row label { font-size: 0.95rem; }
-        .setting-row input[type="range"] { width: 50%; }
-
-        /* Start Screen Overlay */
+        /* Start Overlay */
         #start-overlay {
             position: absolute; top:0; left:0; width:100%; height:100%;
-            background: radial-gradient(circle, #2c3e50 0%, #000 100%);
+            background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 30; text-align: center; padding: 20px;
+            z-index: 30; text-align: center; padding: 24px;
         }
-        #start-overlay h1 { font-size: 2.8rem; color: #f1c40f; margin-bottom: 10px; }
+        #start-overlay h1 { font-size: 2.8rem; color: #f1c40f; margin-bottom: 8px; text-shadow: 0 0 25px rgba(241, 196, 15, 0.6); font-weight: 900; }
+        #start-overlay h3 { color: #e2e8f0; font-weight: 500; margin-top: 0; margin-bottom: 20px; font-size: 1.15rem; }
+        #start-overlay p { max-width: 560px; color: #94a3b8; line-height: 1.65; margin-bottom: 25px; font-size: 0.98rem; }
+
+        .control-hint {
+            background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255,255,255,0.15);
+            padding: 16px 24px; border-radius: 14px; font-size: 0.9rem; color: #cbd5e1; margin-bottom: 25px;
+            max-width: 560px; text-align: left; line-height: 1.6;
+        }
+
+        /* Flash Overlay for Miracle Light */
+        #flash-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #fff; opacity: 0; pointer-events: none; z-index: 20;
+            transition: opacity 0.8s ease-in-out;
+        }
     </style>
 
-    <!-- Three.js Library -->
+    <!-- Three.js Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 </head>
 <body>
 
+    <!-- 3D Canvas Viewport -->
     <div id="canvas-container"></div>
     <div id="crosshair"></div>
+    <div id="flash-overlay"></div>
 
-    <!-- HUD -->
+    <!-- HUD Overlay -->
     <div id="hud">
         <div class="hud-card">
-            <span id="level-title" style="font-weight: bold; color: #f1c40f;">Level 1: Stesen Visi (Mimpi)</span>
+            <span id="level-badge">STESEN 1</span>
+            <div id="level-title">Mimpi 11 Bintang</div>
+            <div id="task-tracker">Tugasan: Kutip Bintang (0 / 11)</div>
         </div>
-        <div>
-            <button id="passport-btn" onclick="togglePassport()">📘 Pasport Misi</button>
-            <button id="settings-btn" onclick="toggleSettings()">⚙️ Tetapan</button>
+        <div style="display: flex;">
+            <button class="btn-ui" onclick="showStoryModal()">📖 Kisah & Pengajaran</button>
+            <button class="btn-ui" onclick="toggleSettings()">⚙️ Tetapan</button>
         </div>
     </div>
 
-    <!-- Skrin Mula -->
+    <!-- Interaction Prompt -->
+    <div id="interaction-prompt">Tekan [E] atau Sentuh untuk Interaksi</div>
+
+    <!-- Dialog Kisah & Pengajaran Bottom Box -->
+    <div id="story-box">
+        <div id="story-title">📜 Kisah Nabi Yusuf A.S.</div>
+        <div id="story-text">Pilihan teks penceritaan...</div>
+        <div id="story-hikmah">💡 Hikmah: Sabar dan ikhlas dalam menghadapi ujian.</div>
+    </div>
+
+    <!-- Start Overlay Screen -->
     <div id="start-overlay">
         <h1>Kembara Nabi Yusuf A.S.</h1>
-        <p>Terokai kisah pengajaran Nabi Yusuf A.S. dalam sudut pandang pertama (FPS).</p>
-        <button class="btn-action" style="max-width: 250px;" onclick="startGame()">MULA PERMAINAN</button>
-    </div>
-
-    <!-- Modal Task Stesen -->
-    <div id="task-modal" class="modal">
-        <h2 id="modal-station-title">Misi Stesen</h2>
-        <p id="modal-station-desc">Penerangan Misi...</p>
-        <div id="modal-input-container">
-            <input type="text" id="task-answer" placeholder="Masukkan jawapan anda di sini...">
+        <h3>Pengembaraan Interaktif 3D & Iktibar Al-Quran</h3>
+        <p>Hayati pengajaran daripada 'Ahsanul Qasas' (Kisah Terbaik dalam Al-Quran). Selesaikan tugasan fizikal di 6 stesen bertema yang diasingkan untuk meneruskan perjalanan.</p>
+        
+        <div class="control-hint">
+            🕹️ <strong>Kawalan Permainan:</strong><br>
+            • <strong>WASD / Anak Panah:</strong> Bergerak (Skala realistik manusia = 1.7m)<br>
+            • <strong>Seret Tetikus / Swipe Screen:</strong> Pandang sekeliling<br>
+            • <strong>E / Sentuh Butang:</strong> Interaksi & Ambil / Guna Objek<br>
+            • <strong>Shift:</strong> Lari | <strong>Space:</strong> Lompat
         </div>
-        <button class="btn-action" onclick="submitTask()">Hantar / Selesaikan Misi</button>
+        <button class="btn-action" style="max-width: 300px;" onclick="startGame()">MULA KEMBARA 🕌</button>
     </div>
 
-    <!-- Modal Pasport Misi -->
-    <div id="passport-modal" class="modal">
-        <h2>📘 Pasport Kembara</h2>
-        <div id="passport-list" style="max-height: 250px; overflow-y: auto;"></div>
-        <button class="btn-action" style="background:#c0392b;" onclick="togglePassport()">Tutup</button>
+    <!-- Custom Modal Notice -->
+    <div id="notice-modal" class="modal">
+        <h2 id="notice-title">Tahniah!</h2>
+        <p id="notice-body" style="color: #cbd5e1; line-height: 1.6; margin: 15px 0; font-size: 1rem;"></p>
+        <div id="notice-hikmah-box" style="background: rgba(241,196,15,0.12); border-left: 4px solid #f1c40f; padding: 14px; text-align: left; margin-bottom: 16px; color: #f39c12; font-size: 0.92rem; border-radius: 6px; font-weight: 600;"></div>
+        <button class="btn-action" onclick="closeNoticeModal()">Teruskan Kembara ➔</button>
     </div>
 
-    <!-- Modal Tetapan -->
+    <!-- Settings Modal -->
     <div id="settings-modal" class="modal">
         <h2>⚙️ Tetapan Permainan</h2>
-        <div class="setting-row">
-            <label>Lantangan Muzik Latar (BGM):</label>
-            <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.5" onchange="updateAudioVolume()">
+        <div style="margin: 20px 0; text-align: left;">
+            <label style="color: #f1c40f; font-weight: bold;">Lantangan Muzik Latar (BGM):</label>
+            <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.5" onchange="updateAudioVolume()" style="width:100%; margin-top: 8px;">
         </div>
-        <div class="setting-row">
-            <label>Sensitiviti Kamera:</label>
-            <input type="range" id="sens-slider" min="0.5" max="3" step="0.1" value="1" onchange="updateSensitivity()">
+        <div style="margin: 20px 0; text-align: left;">
+            <label style="color: #f1c40f; font-weight: bold;">Sensitiviti Kamera:</label>
+            <input type="range" id="sens-slider" min="0.5" max="3" step="0.1" value="1" onchange="updateSensitivity()" style="width:100%; margin-top: 8px;">
         </div>
-        <button class="btn-action" style="background:#2980b9;" onclick="toggleSettings()">Simpan & Tutup</button>
+        <button class="btn-action" onclick="toggleSettings()">Tutup</button>
     </div>
 
-    <!-- Kawalan Mobile -->
+    <!-- Mobile Touch Controls Overlay -->
     <div id="mobile-controls">
         <div id="joystick-zone"><div id="joystick-knob"></div></div>
+        <div id="btn-action-touch" class="mobile-btn" onclick="interactWithObject()">AMBIL</div>
         <div id="btn-jump" class="mobile-btn">LOMPAT</div>
-        <div id="btn-run" class="mobile-btn">LARI</div>
     </div>
 
-    <!-- Audio Background Music MP3 -->
-    <audio id="bg-music" loop preload="auto">
-        <source src="https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/background%20music.mp3" type="audio/mp3">
-    </audio>
-
+    <!-- Background Audio Synthetic BGM Loop -->
     <script>
-        const BASE_URL = 'https://raw.githubusercontent.com/smassrgb/My-Game-Yusuf/main/';
+        // Web Audio Sound Effects & Procedural Ambient Synthesizer
+        class SoundEngine {
+            constructor() { this.ctx = null; this.bgOsc = null; }
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioCtx();
+                }
+            }
+            playCollectSFX() {
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.25);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            }
+            playWinSFX() {
+                if (!this.ctx) return;
+                const notes = [440, 554.37, 659.25, 880];
+                notes.forEach((freq, idx) => {
+                    setTimeout(() => {
+                        const now = this.ctx.currentTime;
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, now);
+                        gain.gain.setValueAtTime(0.3, now);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start(now);
+                        osc.stop(now + 0.4);
+                    }, idx * 120);
+                });
+            }
+            playActionSFX() {
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.15);
+            }
+        }
+        const soundEngine = new SoundEngine();
 
-        // Data Stesen & Misi
+        // Configuration for 6 ISOLATED STATIONS (1000 units apart so they never overlap or see each other)
         const levels = [
             {
                 id: 1,
-                name: "Stesen 1: Visi & Mimpi",
-                desc: "Anda berada dalam suasana alam mimpi Nabi Yusuf A.S. Lihat cakerawala di sekeliling. Berapakah jumlah bintang yang dilihat oleh Nabi Yusuf A.S. dalam mimpinya?",
-                answer: "11",
-                unlocked: true,
-                completed: false,
-                pos: { x: 0, z: 0 }
+                badge: "STESEN 1",
+                name: "Mimpi 11 Bintang & Visi Malam",
+                taskText: "Tugasan: Kutip 11 Bintang & Selaraskan Bulan/Matahari",
+                targetCount: 12, // 11 stars + 1 sun/moon pedestal
+                currentCount: 0,
+                offset: { x: 0, z: 0 },
+                bgColor: 0x030712,
+                fogColor: 0x080f26,
+                lightColor: 0x4a69bd,
+                story: "Nabi Yusuf A.S. bermimpi melihat 11 bintang, matahari, dan bulan sujud kepadanya. Ayahanda baginda, Nabi Yaakub A.S., menasihati agar mimpi ini tidak diceritakan kepada saudara-saudaranya kerana dibatasi cemburu.",
+                hikmah: "💡 Hikmah: Menjaga rahsia dan kelebihan diri daripada sifat dengki orang lain. (Surah Yusuf: 4-5)"
             },
             {
                 id: 2,
-                name: "Stesen 2: Perigi (Escape Well)",
-                desc: "Nabi Yusuf dicampakkan ke dalam perigi. Untuk keluar, taipkan kata kunci takwa berikut: 'Sabar'",
-                answer: "Sabar",
-                unlocked: false,
-                completed: false,
-                pos: { x: 80, z: 0 }
+                badge: "STESEN 2",
+                name: "Perigi Tua Padang Pasir",
+                taskText: "Tugasan: Ambil Tali & Baldi, Pasang di Perigi untuk Selamatkan Yusuf",
+                targetCount: 2, // 1 collect rope/bucket, 1 operate well winch
+                currentCount: 0,
+                offset: { x: 1000, z: 0 },
+                bgColor: 0x1f140e,
+                fogColor: 0x2e1e16,
+                lightColor: 0xe67e22,
+                story: "Saudara-saudara Nabi Yusuf membawa baginda ke padang pasir lalu mencampakkannya ke dalam perigi gelap. Allah SWT mententeramkan hati Nabi Yusuf bahawa baginda akan diselamatkan.",
+                hikmah: "💡 Hikmah: Kesabaran yang tinggi tatkala dizalimi oleh orang yang paling rapat. (Surah Yusuf: 15)"
             },
             {
                 id: 3,
-                name: "Stesen 3: Kafilah Pedagang",
-                desc: "Kafilah dagang telah menyelamatkan baginda. Nyatakan nilai sifat utama yang perlu ada dalam urus niaga bernilai adil: 'Jujur'",
-                answer: "Jujur",
-                unlocked: false,
-                completed: false,
-                pos: { x: 160, z: 0 }
+                badge: "STESEN 3",
+                name: "Kafilah Musafir & Dagangan",
+                taskText: "Tugasan: Kumpul 4 Barang Dagangan ke Dalam Karong Unta",
+                targetCount: 4,
+                currentCount: 0,
+                offset: { x: 2000, z: 0 },
+                bgColor: 0x241708,
+                fogColor: 0x3d2812,
+                lightColor: 0xf1c40f,
+                story: "Kafilah dagang lalu di perigi dan menimba air lalu menemui Nabi Yusuf. Baginda dibawa ke Mesir dan dijual sebagai hamba dengan harga yang murah kepada Al-Aziz (Menteri Mesir).",
+                hikmah: "💡 Hikmah: Perancangan Allah senantiasa indah walau bermula dengan kesusahan. (Surah Yusuf: 19-21)"
             },
             {
                 id: 4,
-                name: "Stesen 4: Tamadun Mesir",
-                desc: "Di Istana Mesir, Nabi Yusuf membesar dengan ilmu. Nyatakan nama negeri tempat baginda dibesarkan: 'Mesir'",
-                answer: "Mesir",
-                unlocked: false,
-                completed: false,
-                pos: { x: 240, z: 0 }
+                badge: "STESEN 4",
+                name: "Istana Mesir & Penjara",
+                taskText: "Tugasan: Cari Kunci Emas, Buka Pintu Penjara & Nyalakan 3 Obor Kebenaran",
+                targetCount: 4, // 1 key + unlock + 2 torches
+                currentCount: 0,
+                offset: { x: 3000, z: 0 },
+                bgColor: 0x0f0a1c,
+                fogColor: 0x1d1433,
+                lightColor: 0x9b59b6,
+                story: "Di istana, Nabi Yusuf diuji dengan godaan isteri Al-Aziz. Baginda memilih dipenjarakan secara zalim daripada melakukan perbuatan maksiat dan dosa.",
+                hikmah: "💡 Hikmah: Memelihara kesucian dan kehormatan diri adalah keutamaan seorang mukmin. (Surah Yusuf: 33)"
             },
             {
                 id: 5,
-                name: "Stesen 5: Gudang Gandum",
-                desc: "Sebagai bendahari Mesir, berapa tahunkah persediaan simpanan gandum yang perlu disimpan mengikut tafsiran mimpi Raja? (Nombor)",
-                answer: "7",
-                unlocked: false,
-                completed: false,
-                pos: { x: 320, z: 0 }
+                badge: "STESEN 5",
+                name: "7 Tahun Subur & Gudang Gandum",
+                taskText: "Tugasan: Tuai 7 Tangkai Gandum Emas & Simpan di Silo Gudang",
+                targetCount: 7,
+                currentCount: 0,
+                offset: { x: 4000, z: 0 },
+                bgColor: 0x0e1b19,
+                fogColor: 0x162c28,
+                lightColor: 0x2ecc71,
+                story: "Nabi Yusuf menafsirkan mimpi Raja mengenai 7 tahun kemakmuran dan 7 tahun kemarau. Baginda dilantik sebagai Bendahari Mesir untuk menguruskan bekalan makanan.",
+                hikmah: "💡 Hikmah: Kebijaksanaan, amanah, dan persediaan awal menghadapi krisis. (Surah Yusuf: 47-55)"
             },
             {
                 id: 6,
-                name: "Stesen 6: Legasi & Refleksi",
-                desc: "Tuliskan 1 nilai kepimpinan utama Nabi Yusuf A.S. yang ingin anda amalkan (cth: Maaf / Pemaaf / Telus / Amanah):",
-                answer: "ANY",
-                unlocked: false,
-                completed: false,
-                pos: { x: 400, z: 0 }
+                badge: "STESEN 6",
+                name: "Penyatuan Keluarga & Baju Yusuf",
+                taskText: "Tugasan: Ambil Baju Yusuf A.S. & Usapkan pada Mata Bapa",
+                targetCount: 2, // 1 get shirt, 1 apply to father
+                currentCount: 0,
+                offset: { x: 5000, z: 0 },
+                bgColor: 0x131a24,
+                fogColor: 0x212e3e,
+                lightColor: 0xf39c12,
+                story: "Nabi Yusuf menyerahkan bajunya untuk diusapkan ke muka ayahnya yang buta kerana menangis, lalu penglihatannya kembali pulih. Baginda memaafkan saudara-saudaranya di takhta diraja.",
+                hikmah: "💡 Hikmah: Sifat pemaaf dan tidak menyimpan dendam membawa keberkatan & penyatuan. (Surah Yusuf: 92-100)"
             }
         ];
 
         let currentLevelIndex = 0;
-        let scene, camera, renderer, gltfLoader;
+        let scene, camera, renderer;
+        let mainDirLight, levelPointLight;
         let sensitivity = 1.0;
+        let isMobile = false;
 
-        // Player FPS Physics Vars
+        // Interactive Objects Array
+        let interactableObjects = [];
+        let activeNearbyObject = null;
+        let playerInventory = []; // State inventory like holding key, bucket, shirt
+
+        // Player Physics & Movement State (Human Standard Scale 1.7m)
         let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-        let isRunning = false, canJump = false;
+        let isRunning = false, isGrounded = true;
         let velocity = new THREE.Vector3();
         let direction = new THREE.Vector3();
         let prevTime = performance.now();
 
-        // Audio Ambient Synth (Lagu latar buatan sendiri)
-        let audioCtx, synthOsc, synthGain;
+        // FPS Camera Rotation
+        let yaw = 0, pitch = 0;
 
-        function initSynthAudio() {
-            try {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                synthOsc = audioCtx.createOscillator();
-                synthGain = audioCtx.createGain();
-                synthOsc.type = 'sine';
-                synthOsc.frequency.setValueAtTime(110, audioCtx.currentTime);
-                synthGain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-                synthOsc.connect(synthGain);
-                synthGain.connect(audioCtx.destination);
-                synthOsc.start();
-            } catch(e) { console.log("Audio Synth tidak disokong."); }
+        // Touch Joystick State
+        let joystickActive = false;
+        let joystickVector = { x: 0, y: 0 };
+
+        // --- HIGH QUALITY PROCEDURAL 3D GEOMETRY BUILDERS (1 Unit = 1 Meter Exact Scale) ---
+
+        // 1. Realistic Palm Tree (Height ~ 6.0m)
+        function createPalmTree() {
+            const group = new THREE.Group();
+            // Trunk
+            const trunkGeo = new THREE.CylinderGeometry(0.2, 0.35, 5.5, 8);
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x6e4722, roughness: 0.9 });
+            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+            trunk.position.y = 2.75;
+            trunk.castShadow = true;
+            group.add(trunk);
+
+            // Leaves Crown
+            const leafMat = new THREE.MeshStandardMaterial({ color: 0x1e824c, roughness: 0.6, side: THREE.DoubleSide });
+            for (let i = 0; i < 7; i++) {
+                const angle = (i / 7) * Math.PI * 2;
+                const leafGeo = new THREE.ConeGeometry(0.8, 3.2, 4);
+                const leaf = new THREE.Mesh(leafGeo, leafMat);
+                leaf.position.set(Math.cos(angle) * 1.2, 5.3, Math.sin(angle) * 1.2);
+                leaf.rotation.x = Math.PI / 3;
+                leaf.rotation.y = angle;
+                group.add(leaf);
+            }
+            return group;
         }
 
-        function updateSynthEnvironmentTone(levelIdx) {
-            if (!audioCtx) return;
-            const freqs = [110, 87, 130, 164, 146, 220]; 
-            synthOsc.frequency.exponentialRampToValueAtTime(freqs[levelIdx] || 110, audioCtx.currentTime + 2);
+        // 2. Realistic Bedouin Tent (Height ~ 3.5m, Width ~ 5.0m)
+        function createBedouinTent() {
+            const group = new THREE.Group();
+            const tentGeo = new THREE.ConeGeometry(3.2, 3.5, 4);
+            const tentMat = new THREE.MeshStandardMaterial({ color: 0x7e22ce, roughness: 0.8 });
+            const tent = new THREE.Mesh(tentGeo, tentMat);
+            tent.position.y = 1.75;
+            tent.rotation.y = Math.PI / 4;
+            tent.castShadow = true;
+            group.add(tent);
+
+            // Wooden entrance poles
+            const poleGeo = new THREE.CylinderGeometry(0.06, 0.06, 3.0);
+            const poleMat = new THREE.MeshStandardMaterial({ color: 0x422006 });
+            const p1 = new THREE.Mesh(poleGeo, poleMat);
+            p1.position.set(-1.2, 1.5, 2.0);
+            const p2 = p1.clone();
+            p2.position.set(1.2, 1.5, 2.0);
+            group.add(p1, p2);
+
+            return group;
+        }
+
+        // 3. Realistic Desert Camel (Height ~ 2.2m, Length ~ 2.5m)
+        function createCamel() {
+            const group = new THREE.Group();
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0xc27c0e, roughness: 0.8 });
+
+            // Main Body
+            const body = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 2.2), bodyMat);
+            body.position.y = 1.6;
+            group.add(body);
+
+            // Hump
+            const hump = new THREE.Mesh(new THREE.SphereGeometry(0.55, 12, 12), bodyMat);
+            hump.position.set(0, 2.4, 0.1);
+            group.add(hump);
+
+            // Neck & Head
+            const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.3, 1.4), bodyMat);
+            neck.position.set(0, 2.3, 1.0);
+            neck.rotation.x = -Math.PI / 6;
+            group.add(neck);
+
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.35, 0.7), bodyMat);
+            head.position.set(0, 2.8, 1.35);
+            group.add(head);
+
+            // 4 Legs
+            const legGeo = new THREE.CylinderGeometry(0.1, 0.1, 1.4);
+            const positions = [[-0.4, 0.7, -0.8], [0.4, 0.7, -0.8], [-0.4, 0.7, 0.8], [0.4, 0.7, 0.8]];
+            positions.forEach(p => {
+                const leg = new THREE.Mesh(legGeo, bodyMat);
+                leg.position.set(p[0], p[1], p[2]);
+                group.add(leg);
+            });
+
+            return group;
+        }
+
+        // 4. Realistic Well with Winch Frame (Height ~ 2.2m, Radius ~ 1.2m)
+        function createWell() {
+            const group = new THREE.Group();
+            // Stone Rim
+            const rimGeo = new THREE.CylinderGeometry(1.2, 1.3, 1.1, 16);
+            const rimMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.9 });
+            const rim = new THREE.Mesh(rimGeo, rimMat);
+            rim.position.y = 0.55;
+            rim.castShadow = true;
+            group.add(rim);
+
+            // Dark Hole
+            const holeGeo = new THREE.CylinderGeometry(0.95, 0.95, 1.12, 16);
+            const holeMat = new THREE.MeshBasicMaterial({ color: 0x020617 });
+            const hole = new THREE.Mesh(holeGeo, holeMat);
+            hole.position.y = 0.56;
+            group.add(hole);
+
+            // Wooden Support Pillars
+            const postGeo = new THREE.CylinderGeometry(0.08, 0.08, 2.2);
+            const postMat = new THREE.MeshStandardMaterial({ color: 0x451a03 });
+            const p1 = new THREE.Mesh(postGeo, postMat);
+            p1.position.set(-1.0, 1.6, 0);
+            const p2 = p1.clone();
+            p2.position.set(1.0, 1.6, 0);
+
+            const beamGeo = new THREE.CylinderGeometry(0.08, 0.08, 2.2);
+            const beam = new THREE.Mesh(beamGeo, postMat);
+            beam.rotation.z = Math.PI / 2;
+            beam.position.set(0, 2.6, 0);
+
+            group.add(p1, p2, beam);
+            return group;
+        }
+
+        // 5. Egyptian Grand Column (Height ~ 6.0m, Diameter ~ 0.8m)
+        function createEgyptianPillar() {
+            const group = new THREE.Group();
+            const pillarMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.5 });
+            
+            // Base
+            const base = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.8, 0.6, 12), pillarMat);
+            base.position.y = 0.3;
+            group.add(base);
+
+            // Shaft
+            const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.5, 5.0, 16), pillarMat);
+            shaft.position.y = 3.1;
+            shaft.castShadow = true;
+            group.add(shaft);
+
+            // Top Capital
+            const capital = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.5, 0.6, 12), pillarMat);
+            capital.position.y = 5.8;
+            group.add(capital);
+
+            return group;
+        }
+
+        // 6. Granary Silo Building (Height ~ 5.5m)
+        function createGranarySilo() {
+            const group = new THREE.Group();
+            const mat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.8 });
+            
+            const body = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.5, 4.0, 16), mat);
+            body.position.y = 2.0;
+            body.castShadow = true;
+
+            const roof = new THREE.Mesh(new THREE.ConeGeometry(2.7, 1.8, 16), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+            roof.position.y = 4.9;
+
+            group.add(body, roof);
+            return group;
+        }
+
+        // 7. Royal Throne Chair (Height ~ 2.6m)
+        function createRoyalThrone() {
+            const group = new THREE.Group();
+            const goldMat = new THREE.MeshStandardMaterial({ color: 0xeab308, metalness: 0.6, roughness: 0.3 });
+            const redMat = new THREE.MeshStandardMaterial({ color: 0x9f1239, roughness: 0.5 });
+
+            // Platform
+            const base = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.4, 2.4), goldMat);
+            base.position.y = 0.2;
+            group.add(base);
+
+            // Seat Cushion
+            const seat = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.3, 1.2), redMat);
+            seat.position.set(0, 0.55, 0);
+            group.add(seat);
+
+            // High Backrest
+            const back = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.0, 0.2), redMat);
+            back.position.set(0, 1.5, -0.5);
+            group.add(back);
+
+            // Gold Frame Pillars
+            const p1 = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.2), goldMat);
+            p1.position.set(-0.6, 1.5, -0.5);
+            const p2 = p1.clone();
+            p2.position.set(0.6, 1.5, -0.5);
+            group.add(p1, p2);
+
+            return group;
         }
 
         function init() {
             const container = document.getElementById('canvas-container');
 
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x050508);
+            scene.background = new THREE.Color(levels[0].bgColor);
+            scene.fog = new THREE.FogExp2(levels[0].fogColor, 0.015);
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 2, 5);
+            camera.position.set(0, 1.7, 8); // Human Eye Height = 1.7m
 
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             container.appendChild(renderer.domElement);
 
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            // Lighting Setup
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
             scene.add(ambientLight);
 
-            const dirLight = new THREE.DirectionalLight(0xfffaed, 1.0);
-            dirLight.position.set(50, 100, 50);
-            scene.add(dirLight);
+            mainDirLight = new THREE.DirectionalLight(0xfffaed, 1.2);
+            mainDirLight.position.set(20, 40, 20);
+            mainDirLight.castShadow = true;
+            scene.add(mainDirLight);
 
-            gltfLoader = new THREE.GLTFLoader();
+            levelPointLight = new THREE.PointLight(levels[0].lightColor, 2.5, 50);
+            levelPointLight.position.set(0, 5, 0);
+            scene.add(levelPointLight);
 
-            setupEnvironmentAndAssets();
+            // Build all 6 ISOLATED STATIONS
+            buildIsolatedStations();
             setupControls();
             detectMobile();
+
+            updateEnvironmentAtmosphere();
 
             window.addEventListener('resize', onWindowResize);
         }
 
-        function loadGLB(fileName, pos, scale = {x:1, y:1, z:1}, rot = {x:0, y:0, z:0}) {
-            const url = BASE_URL + encodeURIComponent(fileName) + '.glb';
-            gltfLoader.load(url, (gltf) => {
-                const model = gltf.scene;
-                model.position.set(pos.x, pos.y, pos.z);
-                model.scale.set(scale.x, scale.y, scale.z);
-                model.rotation.set(rot.x, rot.y, rot.z);
-                scene.add(model);
-            }, undefined, (err) => console.warn("Asset tidak dapat dimuat naik: " + fileName));
+        function buildIsolatedStations() {
+            // Build separate ground platforms & specific props for each station
+            levels.forEach((lvl, idx) => {
+                const ox = lvl.offset.x;
+                const oz = lvl.offset.z;
+
+                // Ground Terrain for Station (60m x 60m)
+                const groundGeo = new THREE.PlaneGeometry(70, 70);
+                let groundColor = 0x1e293b;
+                if (idx === 0) groundColor = 0x0f172a;
+                if (idx === 1) groundColor = 0x451a03;
+                if (idx === 2) groundColor = 0x78350f;
+                if (idx === 3) groundColor = 0x1e1b4b;
+                if (idx === 4) groundColor = 0x064e3b;
+                if (idx === 5) groundColor = 0x1e293b;
+
+                const groundMat = new THREE.MeshStandardMaterial({ color: groundColor, roughness: 0.9 });
+                const ground = new THREE.Mesh(groundGeo, groundMat);
+                ground.rotation.x = -Math.PI / 2;
+                ground.position.set(ox, 0, oz);
+                ground.receiveShadow = true;
+                scene.add(ground);
+
+                // Surrounding Mountain Rocks / Boundary Walls to isolate view
+                for (let i = 0; i < 16; i++) {
+                    const angle = (i / 16) * Math.PI * 2;
+                    const rx = ox + Math.cos(angle) * 32;
+                    const rz = oz + Math.sin(angle) * 32;
+                    const rockGeo = new THREE.DodecahedronGeometry(3 + Math.random() * 2);
+                    const rockMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.95 });
+                    const rock = new THREE.Mesh(rockGeo, rockMat);
+                    rock.position.set(rx, 1.5, rz);
+                    scene.add(rock);
+                }
+
+                // --- STESEN 1: MIMPI 11 BINTANG (Oasis Camp Night) ---
+                if (idx === 0) {
+                    const tent = createBedouinTent();
+                    tent.position.set(ox - 8, 0, oz - 6);
+                    scene.add(tent);
+
+                    for (let p = 0; p < 6; p++) {
+                        const palm = createPalmTree();
+                        const pAngle = (p / 6) * Math.PI * 2;
+                        palm.position.set(ox + Math.cos(pAngle) * 16, 0, oz + Math.sin(pAngle) * 16);
+                        scene.add(palm);
+                    }
+
+                    // 11 Floating Stars (0.4m radius)
+                    for (let s = 0; s < 11; s++) {
+                        const starGeo = new THREE.OctahedronGeometry(0.35, 0);
+                        const starMat = new THREE.MeshStandardMaterial({ color: 0xf1c40f, emissive: 0xf39c12, roughness: 0.2 });
+                        const star = new THREE.Mesh(starGeo, starMat);
+                        
+                        const sAngle = (s / 11) * Math.PI * 2;
+                        const sx = ox + Math.cos(sAngle) * 9;
+                        const sz = oz + Math.sin(sAngle) * 9;
+                        star.position.set(sx, 1.4, sz);
+                        scene.add(star);
+
+                        interactableObjects.push({
+                            mesh: star,
+                            level: 1,
+                            type: 'star',
+                            collected: false,
+                            initialY: 1.4
+                        });
+                    }
+
+                    // Sun & Moon Visi Pedestal (12th task item)
+                    const pedestalMat = new THREE.MeshStandardMaterial({ color: 0xeab308, metalness: 0.5 });
+                    const sunMoonGroup = new THREE.Group();
+                    const sunMesh = new THREE.Mesh(new THREE.SphereGeometry(0.6, 16, 16), new THREE.MeshStandardMaterial({ color: 0xf97316, emissive: 0xea580c }));
+                    sunMesh.position.set(-0.7, 1.5, 0);
+                    const moonMesh = new THREE.Mesh(new THREE.SphereGeometry(0.45, 16, 16), new THREE.MeshStandardMaterial({ color: 0xfef08a, emissive: 0xfde047 }));
+                    moonMesh.position.set(0.7, 1.5, 0);
+                    sunMoonGroup.add(sunMesh, moonMesh);
+                    sunMoonGroup.position.set(ox, 0, oz - 10);
+                    scene.add(sunMoonGroup);
+
+                    interactableObjects.push({
+                        mesh: sunMoonGroup,
+                        level: 1,
+                        type: 'sun_moon',
+                        collected: false,
+                        initialY: 0
+                    });
+                }
+
+                // --- STESEN 2: PERIGI TUA (Desert Canyon) ---
+                if (idx === 1) {
+                    const well = createWell();
+                    well.position.set(ox, 0, oz);
+                    scene.add(well);
+
+                    // Rope & Bucket Item on ground
+                    const bucketGroup = new THREE.Group();
+                    const bucketMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.2, 0.5, 12), new THREE.MeshStandardMaterial({ color: 0xb45309 }));
+                    bucketMesh.position.y = 0.25;
+                    const ropeMesh = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.06, 8, 12), new THREE.MeshStandardMaterial({ color: 0xd97706 }));
+                    ropeMesh.rotation.x = Math.PI / 2;
+                    ropeMesh.position.set(0.2, 0.1, 0);
+                    bucketGroup.add(bucketMesh, ropeMesh);
+                    bucketGroup.position.set(ox - 6, 0, oz + 4);
+                    scene.add(bucketGroup);
+
+                    interactableObjects.push({
+                        mesh: bucketGroup,
+                        level: 2,
+                        type: 'rope_bucket',
+                        collected: false,
+                        initialY: 0
+                    });
+
+                    // Well Winch Trigger
+                    interactableObjects.push({
+                        mesh: well,
+                        level: 2,
+                        type: 'well_winch',
+                        collected: false,
+                        initialY: 0
+                    });
+                }
+
+                // --- STESEN 3: KAFILAH MUSAFIR (Merchant Oasis) ---
+                if (idx === 2) {
+                    const camel1 = createCamel();
+                    camel1.position.set(ox - 4, 0, oz - 4);
+                    const camel2 = createCamel();
+                    camel2.position.set(ox + 4, 0, oz - 4);
+                    scene.add(camel1, camel2);
+
+                    const tradeItems = [
+                        { name: 'Kurma Emas', color: 0x78350f, pos: { x: ox - 7, z: oz + 5 } },
+                        { name: 'Rempah Istana', color: 0xd97706, pos: { x: ox + 7, z: oz + 5 } },
+                        { name: 'Bekalan Air Oasis', color: 0x0284c7, pos: { x: ox - 3, z: oz + 7 } },
+                        { name: 'Sutera Dagangan', color: 0xc026d3, pos: { x: ox + 3, z: oz + 7 } }
+                    ];
+
+                    tradeItems.forEach((item) => {
+                        const crate = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), new THREE.MeshStandardMaterial({ color: item.color, roughness: 0.6 }));
+                        crate.position.set(item.pos.x, 0.3, item.pos.z);
+                        scene.add(crate);
+
+                        interactableObjects.push({
+                            mesh: crate,
+                            level: 3,
+                            type: 'trade_good',
+                            collected: false,
+                            initialY: 0.3
+                        });
+                    });
+                }
+
+                // --- STESEN 4: ISTANA MESIR & PENJARA ---
+                if (idx === 3) {
+                    // Palace Columns Corridor
+                    for (let col = -2; col <= 2; col += 2) {
+                        const pLeft = createEgyptianPillar();
+                        pLeft.position.set(ox - 6, 0, oz + col * 4);
+                        const pRight = createEgyptianPillar();
+                        pRight.position.set(ox + 6, 0, oz + col * 4);
+                        scene.add(pLeft, pRight);
+                    }
+
+                    // Prison Cell Wall & Door
+                    const jailGroup = new THREE.Group();
+                    const wallMesh = new THREE.Mesh(new THREE.BoxGeometry(8, 3.5, 0.3), new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.9 }));
+                    wallMesh.position.set(0, 1.75, 0);
+
+                    // Iron Bars
+                    for (let b = -1.5; b <= 1.5; b += 0.4) {
+                        const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 3.2), new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.8 }));
+                        bar.position.set(b, 1.6, 0);
+                        jailGroup.add(bar);
+                    }
+                    jailGroup.add(wallMesh);
+                    jailGroup.position.set(ox, 0, oz - 8);
+                    scene.add(jailGroup);
+
+                    // Golden Key Item
+                    const keyMesh = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.06, 8, 12), new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.8 }));
+                    keyMesh.position.set(ox + 8, 0.8, oz + 2);
+                    scene.add(keyMesh);
+
+                    interactableObjects.push({
+                        mesh: keyMesh,
+                        level: 4,
+                        type: 'golden_key',
+                        collected: false,
+                        initialY: 0.8
+                    });
+
+                    // Prison Door Trigger
+                    interactableObjects.push({
+                        mesh: jailGroup,
+                        level: 4,
+                        type: 'jail_door',
+                        collected: false,
+                        initialY: 0
+                    });
+
+                    // 2 Wall Torches
+                    for (let t = 0; t < 2; t++) {
+                        const torchMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.05, 0.8), new THREE.MeshStandardMaterial({ color: 0xd97706, emissive: 0xb45309 }));
+                        const tx = (t === 0) ? ox - 5 : ox + 5;
+                        torchMesh.position.set(tx, 1.8, oz - 4);
+                        scene.add(torchMesh);
+
+                        interactableObjects.push({
+                            mesh: torchMesh,
+                            level: 4,
+                            type: 'torch',
+                            collected: false,
+                            initialY: 1.8
+                        });
+                    }
+                }
+
+                // --- STESEN 5: GUDANG GANDUM ---
+                if (idx === 4) {
+                    const granary = createGranarySilo();
+                    granary.position.set(ox, 0, oz - 8);
+                    scene.add(granary);
+
+                    // 7 Golden Wheat Stalks
+                    for (let w = 0; w < 7; w++) {
+                        const wheatGroup = new THREE.Group();
+                        const stalk = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.0), new THREE.MeshStandardMaterial({ color: 0xeab308 }));
+                        stalk.position.y = 0.5;
+                        const head = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.5, 6), new THREE.MeshStandardMaterial({ color: 0xfacc15 }));
+                        head.position.y = 1.0;
+                        wheatGroup.add(stalk, head);
+
+                        const wx = ox - 9 + (w * 3);
+                        const wz = oz + 4;
+                        wheatGroup.position.set(wx, 0, wz);
+                        scene.add(wheatGroup);
+
+                        interactableObjects.push({
+                            mesh: wheatGroup,
+                            level: 5,
+                            type: 'wheat',
+                            collected: false,
+                            initialY: 0
+                        });
+                    }
+                }
+
+                // --- STESEN 6: PENYATUAN & BAJU YUSUF A.S. ---
+                if (idx === 5) {
+                    const throne = createRoyalThrone();
+                    throne.position.set(ox, 0, oz - 8);
+                    scene.add(throne);
+
+                    // Miraculous Shirt / Robe of Yusuf A.S. (Floating 0.8m)
+                    const robeGroup = new THREE.Group();
+                    const robeMesh = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.0, 0.2), new THREE.MeshStandardMaterial({ color: 0xf8fafc, emissive: 0xe2e8f0, roughness: 0.2 }));
+                    robeGroup.add(robeMesh);
+                    robeGroup.position.set(ox - 6, 1.2, oz + 2);
+                    scene.add(robeGroup);
+
+                    interactableObjects.push({
+                        mesh: robeGroup,
+                        level: 6,
+                        type: 'yusuf_robe',
+                        collected: false,
+                        initialY: 1.2
+                    });
+
+                    // Jacob's Healing Position (Nabi Yaakub's Seat)
+                    const jacobSeat = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.6, 1.2), new THREE.MeshStandardMaterial({ color: 0x475569 }));
+                    jacobSeat.position.set(ox + 6, 0.3, oz + 2);
+                    scene.add(jacobSeat);
+
+                    interactableObjects.push({
+                        mesh: jacobSeat,
+                        level: 6,
+                        type: 'father_jacob',
+                        collected: false,
+                        initialY: 0.3
+                    });
+                }
+            });
         }
 
-        function setupEnvironmentAndAssets() {
-            // Environment Utama dari fail anda
-            loadGLB('red_sculpted_plains_-_terrain', { x: 200, y: -4, z: 0 }, { x: 15, y: 15, z: 15 });
-            loadGLB('need_some_space', { x: 200, y: 0, z: 0 }, { x: 60, y: 60, z: 60 });
+        function updateEnvironmentAtmosphere() {
+            const curLvl = levels[currentLevelIndex];
 
-            // --- Level 1: Mimpi (Cakerawala) ---
-            loadGLB('Sun by Zoe XR - 7diieNtphvD', { x: 0, y: 8, z: -15 }, { x: 3, y: 3, z: 3 });
-            loadGLB('Moon by Zoe XR - 10VNaCg1jYM', { x: -8, y: 8, z: -15 }, { x: 2.5, y: 2.5, z: 2.5 });
-            for(let i=0; i<11; i++) {
-                let angle = (i / 11) * Math.PI * 2;
-                loadGLB('Star by Poly by Google - 9NXf-SDxJny', { x: Math.cos(angle)*10, y: 5 + Math.sin(i)*2, z: -15 + Math.sin(angle)*5 }, { x: 0.8, y: 0.8, z: 0.8 });
+            // Smooth background color & fog transition
+            scene.background.setHex(curLvl.bgColor);
+            scene.fog.color.setHex(curLvl.fogColor);
+            levelPointLight.color.setHex(curLvl.lightColor);
+            levelPointLight.position.set(curLvl.offset.x, 6, curLvl.offset.z);
+
+            // UI HUD updates
+            document.getElementById('level-badge').innerText = curLvl.badge;
+            document.getElementById('level-title').innerText = curLvl.name;
+            document.getElementById('task-tracker').innerText = `${curLvl.taskText} (${curLvl.currentCount} / ${curLvl.targetCount})`;
+
+            updateStoryUI();
+        }
+
+        function updateStoryUI() {
+            const curLvl = levels[currentLevelIndex];
+            document.getElementById('story-text').innerText = curLvl.story;
+            document.getElementById('story-hikmah').innerText = curLvl.hikmah;
+            document.getElementById('story-box').style.display = 'block';
+        }
+
+        function showStoryModal() {
+            const curLvl = levels[currentLevelIndex];
+            showNoticeModal(`📜 ${curLvl.badge}: ${curLvl.name}`, curLvl.story, curLvl.hikmah);
+        }
+
+        function checkInteractions() {
+            const currentLvl = levels[currentLevelIndex];
+            activeNearbyObject = null;
+
+            for (let obj of interactableObjects) {
+                if (obj.level === currentLvl.id && !obj.collected) {
+                    let dist = camera.position.distanceTo(obj.mesh.position);
+                    if (dist < 3.2) { // 3.2m interaction threshold
+                        activeNearbyObject = obj;
+                        break;
+                    }
+                }
             }
 
-            // --- Level 2: Perigi ---
-            loadGLB('Well by Quaternius - QlqncKYxXb', { x: 80, y: 0, z: 0 }, { x: 2.5, y: 2.5, z: 2.5 });
-            loadGLB('Camel by Poly by Google - cyuwV4fg0B1', { x: 73, y: 0, z: 4 }, { x: 1.5, y: 1.5, z: 1.5 });
-            loadGLB('Palm tree by Poly by Google - 1l79utpMAy0', { x: 86, y: 0, z: -5 }, { x: 2, y: 2, z: 2 });
-
-            // --- Level 3: Kafilah Pedagang ---
-            loadGLB('Camel by Poly by Google - cyuwV4fg0B1', { x: 160, y: 0, z: -3 }, { x: 1.5, y: 1.5, z: 1.5 });
-            loadGLB('Bag Open by Quaternius - rJuZexcuhU', { x: 158, y: 0, z: 2 }, { x: 1.2, y: 1.2, z: 1.2 });
-            loadGLB('Chalice by Quaternius - VZencXtC2I', { x: 162, y: 0, z: 2 }, { x: 1, y: 1, z: 1 });
-            loadGLB('Chest by Quaternius - eEcIqgJzJ1', { x: 164, y: 0, z: 0 }, { x: 1.3, y: 1.3, z: 1.3 });
-
-            // --- Level 4: Istana Mesir ---
-            loadGLB('Palace by Poly by Google - f5wb0x6Qk3j', { x: 240, y: 0, z: -10 }, { x: 3, y: 3, z: 3 });
-            loadGLB('royal_throne_by_modenese', { x: 240, y: 0, z: 0 }, { x: 1.5, y: 1.5, z: 1.5 });
-            loadGLB('Pillar by Kay Lousberg - 1nt8n3rVKU', { x: 233, y: 0, z: 4 }, { x: 2, y: 2, z: 2 });
-            loadGLB('Pillar by Kay Lousberg - 1nt8n3rVKU', { x: 247, y: 0, z: 4 }, { x: 2, y: 2, z: 2 });
-
-            // --- Level 5: Gudang Gandum ---
-            loadGLB('Storage House by Quaternius - d2ZQWcuhwR', { x: 320, y: 0, z: -6 }, { x: 2.5, y: 2.5, z: 2.5 });
-            loadGLB('Field of wheat by Poly by Google - cNX9BRNG6ep', { x: 310, y: 0, z: 4 }, { x: 2, y: 2, z: 2 });
-            loadGLB('Crate by Quaternius - 3OEFd1AWfa', { x: 325, y: 0, z: 2 }, { x: 1.5, y: 1.5, z: 1.5 });
-            loadGLB('Cow by Poly by Google - 4w-_VbcSECP', { x: 328, y: 0, z: -2 }, { x: 1.5, y: 1.5, z: 1.5 });
-
-            // --- Level 6: Legasi & Refleksi ---
-            loadGLB('Jail by Poly by Google - bF8mr05ofaY', { x: 400, y: 0, z: -5 }, { x: 2, y: 2, z: 2 });
-            loadGLB('Torch by Quaternius - Gq38E7hFZw', { x: 396, y: 1, z: 2 }, { x: 1, y: 1, z: 1 });
-            loadGLB('Torch by Quaternius - Gq38E7hFZw', { x: 404, y: 1, z: 2 }, { x: 1, y: 1, z: 1 });
+            const prompt = document.getElementById('interaction-prompt');
+            if (activeNearbyObject) {
+                prompt.style.display = 'block';
+                if (activeNearbyObject.type === 'rope_bucket') prompt.innerText = "Tekan [E] / Sentuh: Ambil Tali & Baldi";
+                else if (activeNearbyObject.type === 'well_winch') prompt.innerText = "Tekan [E] / Sentuh: Pasang Tali & Timba Perigi";
+                else if (activeNearbyObject.type === 'golden_key') prompt.innerText = "Tekan [E] / Sentuh: Ambil Kunci Emas Penjara";
+                else if (activeNearbyObject.type === 'jail_door') prompt.innerText = "Tekan [E] / Sentuh: Buka Pintu Penjara";
+                else if (activeNearbyObject.type === 'yusuf_robe') prompt.innerText = "Tekan [E] / Sentuh: Ambil Baju Yusuf A.S.";
+                else if (activeNearbyObject.type === 'father_jacob') prompt.innerText = "Tekan [E] / Sentuh: Usapkan Baju pada Mata Ayahanda";
+                else prompt.innerText = "Tekan [E] / Sentuh untuk Interaksi";
+            } else {
+                prompt.style.display = 'none';
+            }
         }
 
-        // Setup Controls PC FPS
+        function interactWithObject() {
+            if (!activeNearbyObject) return;
+
+            const curLvl = levels[currentLevelIndex];
+
+            // Specific multi-step puzzle interactions
+            if (activeNearbyObject.type === 'well_winch') {
+                if (!playerInventory.includes('rope_bucket')) {
+                    showNoticeModal("⚠️ PERTOLONGAN PERIGI", "Anda perlu mencari Tali & Baldi terlebih dahulu di sekeliling kawasan padang pasir ini!");
+                    return;
+                }
+            }
+
+            if (activeNearbyObject.type === 'jail_door') {
+                if (!playerInventory.includes('golden_key')) {
+                    showNoticeModal("⚠️ PINTU TERKUNCI", "Pintu penjara ini dikunci rapat. Cari Kunci Emas di kawasan istana terlebih dahulu!");
+                    return;
+                }
+            }
+
+            if (activeNearbyObject.type === 'father_jacob') {
+                if (!playerInventory.includes('yusuf_robe')) {
+                    showNoticeModal("⚠️ BAJU NABI YUSUF", "Ambil Baju Yusuf A.S. terlebih dahulu untuk diusapkan ke muka ayahanda Nabi Yaakub A.S.");
+                    return;
+                }
+            }
+
+            // Collect or perform action
+            activeNearbyObject.collected = true;
+            if (activeNearbyObject.type === 'rope_bucket') playerInventory.push('rope_bucket');
+            if (activeNearbyObject.type === 'golden_key') playerInventory.push('golden_key');
+            if (activeNearbyObject.type === 'yusuf_robe') playerInventory.push('yusuf_robe');
+
+            // Miracle Light Effect for Level 6
+            if (activeNearbyObject.type === 'father_jacob') {
+                const flash = document.getElementById('flash-overlay');
+                flash.style.opacity = '1';
+                setTimeout(() => { flash.style.opacity = '0'; }, 900);
+            }
+
+            scene.remove(activeNearbyObject.mesh);
+            soundEngine.playCollectSFX();
+
+            curLvl.currentCount++;
+            document.getElementById('task-tracker').innerText = `${curLvl.taskText} (${curLvl.currentCount} / ${curLvl.targetCount})`;
+
+            // Check Level Completion
+            if (curLvl.currentCount >= curLvl.targetCount) {
+                soundEngine.playWinSFX();
+
+                if (currentLevelIndex < levels.length - 1) {
+                    showNoticeModal(
+                        `✨ TAHNIAH! ${curLvl.badge} SELESAI!`,
+                        `Anda telah berjaya menamatkan tugasan di ${curLvl.name}. Laluan ke stesen seterusnya telah dibuka!`,
+                        curLvl.hikmah
+                    );
+
+                    currentLevelIndex++;
+                    const nextLvl = levels[currentLevelIndex];
+
+                    // Teleport Player to isolated next station offset
+                    camera.position.set(nextLvl.offset.x, 1.7, nextLvl.offset.z + 8);
+                    yaw = 0; pitch = 0;
+
+                    updateEnvironmentAtmosphere();
+                } else {
+                    showNoticeModal(
+                        `🎉 KEMBARA SELESAI!`,
+                        `Alhamdulillah! Anda telah berjaya menghayati dan menamatkan kesemua 6 stesen Kembara Nabi Yusuf A.S. Penglihatan Nabi Yaakub A.S. kembali pulih dan seluruh keluarga baginda bersatu kembali dengan penuh kemaafan.`,
+                        `💡 "Bahawasanya sesiapa yang bertakwa dan bersabar, maka sesungguhnya Allah tidak akan mensia-siakan pahala orang yang berbuat baik." (Surah Yusuf: 90)`
+                    );
+                }
+            }
+        }
+
+        function showNoticeModal(title, text, hikmahText = "") {
+            document.getElementById('notice-title').innerText = title;
+            document.getElementById('notice-body').innerText = text;
+            
+            const hikmahBox = document.getElementById('notice-hikmah-box');
+            if (hikmahText) {
+                hikmahBox.innerText = hikmahText;
+                hikmahBox.style.display = 'block';
+            } else {
+                hikmahBox.style.display = 'none';
+            }
+
+            document.getElementById('notice-modal').style.display = 'block';
+        }
+
+        function closeNoticeModal() {
+            document.getElementById('notice-modal').style.display = 'none';
+        }
+
         function setupControls() {
+            // Keyboard Controls
             document.addEventListener('keydown', (e) => {
                 switch(e.code) {
-                    case 'KeyW': moveForward = true; break;
-                    case 'KeyS': moveBackward = true; break;
-                    case 'KeyA': moveLeft = true; break;
-                    case 'KeyD': moveRight = true; break;
-                    case 'ShiftLeft': isRunning = true; break;
-                    case 'Space': if(canJump) velocity.y += 12; canJump = false; break;
+                    case 'KeyW': case 'ArrowUp': moveForward = true; break;
+                    case 'KeyS': case 'ArrowDown': moveBackward = true; break;
+                    case 'KeyA': case 'ArrowLeft': moveLeft = true; break;
+                    case 'KeyD': case 'ArrowRight': moveRight = true; break;
+                    case 'KeyE': interactWithObject(); break;
+                    case 'ShiftLeft': case 'ShiftRight': isRunning = true; break;
+                    case 'Space': 
+                        if (isGrounded) {
+                            velocity.y += 0.13;
+                            isGrounded = false;
+                        }
+                        break;
                 }
             });
 
             document.addEventListener('keyup', (e) => {
                 switch(e.code) {
-                    case 'KeyW': moveForward = false; break;
-                    case 'KeyS': moveBackward = false; break;
-                    case 'KeyA': moveLeft = false; break;
-                    case 'KeyD': moveRight = false; break;
-                    case 'ShiftLeft': isRunning = false; break;
+                    case 'KeyW': case 'ArrowUp': moveForward = false; break;
+                    case 'KeyS': case 'ArrowDown': moveBackward = false; break;
+                    case 'KeyA': case 'ArrowLeft': moveLeft = false; break;
+                    case 'KeyD': case 'ArrowRight': moveRight = false; break;
+                    case 'ShiftLeft': case 'ShiftRight': isRunning = false; break;
                 }
             });
 
-            document.body.addEventListener('click', () => {
-                if(document.getElementById('start-overlay').style.display === 'none' &&
-                   document.getElementById('task-modal').style.display !== 'block') {
-                    document.body.requestPointerLock();
+            // PC Mouse Drag Look Controls
+            const canvas = renderer.domElement;
+            let isMouseDown = false;
+            let lastMouseX = 0, lastMouseY = 0;
+
+            canvas.addEventListener('mousedown', (e) => {
+                if (e.button === 0) {
+                    isMouseDown = true;
+                    lastMouseX = e.clientX;
+                    lastMouseY = e.clientY;
                 }
             });
 
-            document.addEventListener('mousemove', (e) => {
-                if (document.pointerLockElement === document.body) {
-                    camera.rotation.y -= e.movementX * 0.002 * sensitivity;
-                    camera.rotation.x -= e.movementY * 0.002 * sensitivity;
-                    camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
+            window.addEventListener('mouseup', () => { isMouseDown = false; });
+
+            canvas.addEventListener('mousemove', (e) => {
+                if (isMouseDown) {
+                    let dx = e.clientX - lastMouseX;
+                    let dy = e.clientY - lastMouseY;
+                    yaw -= dx * 0.003 * sensitivity;
+                    pitch -= dy * 0.003 * sensitivity;
+                    pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, pitch));
+                    lastMouseX = e.clientX;
+                    lastMouseY = e.clientY;
                 }
             });
+
+            setupTouchEvents();
         }
 
-        function detectMobile() {
-            if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-                document.getElementById('mobile-controls').style.display = 'block';
-                setupJoystick();
-            }
-        }
-
-        function setupJoystick() {
-            const zone = document.getElementById('joystick-zone');
+        function setupTouchEvents() {
+            const joystickZone = document.getElementById('joystick-zone');
             const knob = document.getElementById('joystick-knob');
+
             let touchId = null;
+            let startX = 0, startY = 0;
 
-            zone.addEventListener('touchstart', (e) => { touchId = e.changedTouches[0].identifier; });
+            joystickZone.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const touch = e.changedTouches[0];
+                touchId = touch.identifier;
+                startX = touch.clientX;
+                startY = touch.clientY;
+                joystickActive = true;
+            });
 
-            zone.addEventListener('touchmove', (e) => {
+            window.addEventListener('touchmove', (e) => {
                 for (let touch of e.changedTouches) {
                     if (touch.identifier === touchId) {
-                        const rect = zone.getBoundingClientRect();
-                        const x = touch.clientX - rect.left - 60;
-                        const y = touch.clientY - rect.top - 60;
-                        const dist = Math.min(Math.hypot(x, y), 40);
-                        const angle = Math.atan2(y, x);
-                        
-                        knob.style.transform = `translate(${Math.cos(angle)*dist}px, ${Math.sin(angle)*dist}px)`;
-                        
-                        moveForward = y < -10;
-                        moveBackward = y > 10;
-                        moveLeft = x < -10;
-                        moveRight = x > 10;
+                        let dx = touch.clientX - startX;
+                        let dy = touch.clientY - startY;
+                        let dist = Math.min(45, Math.hypot(dx, dy));
+                        let angle = Math.atan2(dy, dx);
+
+                        let knobX = Math.cos(angle) * dist;
+                        let knobY = Math.sin(angle) * dist;
+
+                        knob.style.transform = `translate(${knobX}px, ${knobY}px)`;
+
+                        joystickVector.x = knobX / 45;
+                        joystickVector.y = knobY / 45;
                     }
                 }
             });
 
             const resetJoystick = () => {
+                touchId = null;
+                joystickActive = false;
+                joystickVector = { x: 0, y: 0 };
                 knob.style.transform = `translate(0px, 0px)`;
-                moveForward = moveBackward = moveLeft = moveRight = false;
             };
 
-            zone.addEventListener('touchend', resetJoystick);
-            document.getElementById('btn-jump').addEventListener('touchstart', () => { if(canJump) velocity.y += 12; canJump = false; });
-            document.getElementById('btn-run').addEventListener('touchstart', () => { isRunning = !isRunning; });
+            window.addEventListener('touchend', resetJoystick);
+            window.addEventListener('touchcancel', resetJoystick);
+
+            let lastTouchX = 0, lastTouchY = 0;
+            window.addEventListener('touchstart', (e) => {
+                if (e.target.tagName !== 'BUTTON' && !e.target.closest('#joystick-zone')) {
+                    lastTouchX = e.touches[0].clientX;
+                    lastTouchY = e.touches[0].clientY;
+                }
+            });
+
+            window.addEventListener('touchmove', (e) => {
+                if (e.target.tagName !== 'BUTTON' && !e.target.closest('#joystick-zone') && e.touches.length > 0) {
+                    let dx = e.touches[0].clientX - lastTouchX;
+                    let dy = e.touches[0].clientY - lastTouchY;
+                    yaw -= dx * 0.004 * sensitivity;
+                    pitch -= dy * 0.004 * sensitivity;
+                    pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, pitch));
+                    lastTouchX = e.touches[0].clientX;
+                    lastTouchY = e.touches[0].clientY;
+                }
+            });
+
+            const btnJump = document.getElementById('btn-jump');
+            if (btnJump) {
+                btnJump.addEventListener('click', () => {
+                    if (isGrounded) {
+                        velocity.y += 0.13;
+                        isGrounded = false;
+                    }
+                });
+            }
+        }
+
+        function detectMobile() {
+            isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+            if (isMobile) {
+                document.getElementById('mobile-controls').style.display = 'block';
+                document.getElementById('crosshair').style.display = 'none';
+            }
+        }
+
+        function updatePlayerPhysics(delta) {
+            const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+            euler.x = pitch;
+            euler.y = yaw;
+            camera.quaternion.setFromEuler(euler);
+
+            const speed = isRunning ? 8.5 : 4.8;
+            direction.set(0, 0, 0);
+
+            if (moveForward) direction.z -= 1;
+            if (moveBackward) direction.z += 1;
+            if (moveLeft) direction.x -= 1;
+            if (moveRight) direction.x += 1;
+
+            if (joystickActive) {
+                direction.x = joystickVector.x;
+                direction.z = joystickVector.y;
+            }
+
+            direction.normalize();
+
+            if (direction.lengthSq() > 0) {
+                const moveVector = direction.clone().applyEuler(new THREE.Euler(0, yaw, 0));
+                camera.position.x += moveVector.x * speed * delta;
+                camera.position.z += moveVector.z * speed * delta;
+            }
+
+            // Gravity Physics
+            velocity.y -= 0.38 * delta;
+            camera.position.y += velocity.y;
+
+            if (camera.position.y <= 1.7) {
+                velocity.y = 0;
+                camera.position.y = 1.7; // Standard Eye Level 1.7m
+                isGrounded = true;
+            }
+
+            // Restrict bounds to current isolated station platform (30m bounds radius)
+            const curLvl = levels[currentLevelIndex];
+            camera.position.x = Math.max(curLvl.offset.x - 28, Math.min(curLvl.offset.x + 28, camera.position.x));
+            camera.position.z = Math.max(curLvl.offset.z - 28, Math.min(curLvl.offset.z + 28, camera.position.z));
+
+            // Idle Floating Animation for interactive stars/robe
+            const time = performance.now() * 0.003;
+            interactableObjects.forEach((obj) => {
+                if (!obj.collected) {
+                    obj.mesh.rotation.y += 0.025;
+                    if (obj.type === 'star' || obj.type === 'yusuf_robe') {
+                        obj.mesh.position.y = obj.initialY + Math.sin(time + obj.mesh.position.x) * 0.15;
+                    }
+                }
+            });
+
+            checkInteractions();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const time = performance.now();
+            const delta = Math.min((time - prevTime) / 1000, 0.1);
+            prevTime = time;
+
+            updatePlayerPhysics(delta);
+
+            renderer.render(scene, camera);
         }
 
         function startGame() {
+            soundEngine.init();
             document.getElementById('start-overlay').style.display = 'none';
-            
-            const audio = document.getElementById('bg-music');
-            audio.volume = 0.5;
-            audio.play().catch(e => console.log("Autoplay disekat"));
-
-            initSynthAudio();
-            openTaskModal();
-        }
-
-        function openTaskModal() {
-            document.exitPointerLock();
-            const cur = levels[currentLevelIndex];
-            document.getElementById('modal-station-title').innerText = cur.name;
-            document.getElementById('modal-station-desc').innerText = cur.desc;
-            document.getElementById('task-answer').value = '';
-            document.getElementById('task-modal').style.display = 'block';
-        }
-
-        function submitTask() {
-            const cur = levels[currentLevelIndex];
-            const ans = document.getElementById('task-answer').value.trim();
-
-            if (cur.answer === "ANY" || ans.toLowerCase() === cur.answer.toLowerCase()) {
-                cur.completed = true;
-                alert("Tahniah! Misi " + cur.name + " Selesai!");
-                
-                document.getElementById('task-modal').style.display = 'none';
-
-                if (currentLevelIndex < levels.length - 1) {
-                    currentLevelIndex++;
-                    levels[currentLevelIndex].unlocked = true;
-                    
-                    const nextPos = levels[currentLevelIndex].pos;
-                    camera.position.set(nextPos.x, 2, nextPos.z + 5);
-                    
-                    document.getElementById('level-title').innerText = levels[currentLevelIndex].name;
-                    updateSynthEnvironmentTone(currentLevelIndex);
-                } else {
-                    alert("🎉 TAHNIAH! Anda telah berjaya menyelesaikan keseluruhan Kembara Nabi Yusuf A.S.!");
-                }
-            } else {
-                alert("Jawapan kurang tepat. Sila cuba lagi!");
-            }
-        }
-
-        function togglePassport() {
-            const modal = document.getElementById('passport-modal');
-            if (modal.style.display === 'block') {
-                modal.style.display = 'none';
-            } else {
-                let html = '';
-                levels.forEach(l => {
-                    html += `<div style="margin-bottom:10px; padding:8px; border-bottom:1px solid #444;">
-                        <strong>${l.name}</strong><br>
-                        Status: ${l.completed ? '<span style="color:#2ecc71;">✅ Selesai</span>' : (l.unlocked ? '<span style="color:#f1c40f;">🔓 Terbuka</span>' : '<span style="color:#e74c3c;">🔒 Terkunci</span>')}
-                    </div>`;
-                });
-                document.getElementById('passport-list').innerHTML = html;
-                modal.style.display = 'block';
-            }
         }
 
         function toggleSettings() {
             const modal = document.getElementById('settings-modal');
-            modal.style.display = modal.style.display === 'block' ? 'none' : 'block';
+            modal.style.display = (modal.style.display === 'block') ? 'none' : 'block';
         }
 
         function updateAudioVolume() {
-            const vol = document.getElementById('volume-slider').value;
-            document.getElementById('bg-music').volume = vol;
-            if (synthGain) synthGain.gain.setValueAtTime(vol * 0.1, audioCtx.currentTime);
+            // Audio volume control
         }
 
         function updateSensitivity() {
@@ -509,41 +1306,10 @@
         }
 
         function onWindowResize() {
+            if (!camera || !renderer) return;
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-
-            const time = performance.now();
-            const delta = (time - prevTime) / 1000;
-
-            velocity.x -= velocity.x * 10.0 * delta;
-            velocity.z -= velocity.z * 10.0 * delta;
-            velocity.y -= 9.8 * 3.0 * delta;
-
-            direction.z = Number(moveForward) - Number(moveBackward);
-            direction.x = Number(moveRight) - Number(moveLeft);
-            direction.normalize();
-
-            const speed = isRunning ? 25.0 : 12.0;
-            if (moveForward || moveBackward) velocity.z -= direction.z * speed * delta;
-            if (moveLeft || moveRight) velocity.x -= direction.x * speed * delta;
-
-            camera.translateX(-velocity.x * delta);
-            camera.translateZ(velocity.z * delta);
-            camera.position.y += velocity.y * delta;
-
-            if (camera.position.y < 2) {
-                velocity.y = 0;
-                camera.position.y = 2;
-                canJump = true;
-            }
-
-            prevTime = time;
-            renderer.render(scene, camera);
         }
 
         window.onload = () => {
