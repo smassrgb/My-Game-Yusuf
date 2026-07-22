@@ -215,7 +215,7 @@
             font-weight: 800; display: none; justify-content: center; align-items: center;
             pointer-events: auto; font-size: 0.95rem; backdrop-filter: blur(8px);
             box-shadow: 0 8px 20px rgba(0,0,0,0.7); z-index: 25;
-            touch-action: manipulation; transition: transform 0.1s ease;
+            touch-action: none; transition: transform 0.1s ease;
         }
         .mobile-btn:active { transform: scale(0.9); background: #f1c40f; color: #000; }
         #btn-action-touch { bottom: 45px; right: 40px; background: rgba(39, 174, 96, 0.95); border-color: #2ecc71; }
@@ -923,6 +923,7 @@
         let yaw = 0, pitch = 0;
         let joystickActive = false;
         let joystickVector = { x: 0, y: 0 };
+        let cameraPointerId = null;
 
         let interactableObjects = [];
         let activeNearbyObject = null;
@@ -1256,10 +1257,12 @@
 
             container.addEventListener('pointerdown', (e) => {
                 if (!isInGameMode || !isMobile) return;
-                if (e.target.closest('.mobile-btn') || e.target.closest('#joystick-zone')) return;
+                if (e.target.closest('.mobile-btn') || e.target.closest('#joystick-zone') || e.target.closest('.glass-panel')) return;
+
+                if (cameraPointerId !== null) return;
+                cameraPointerId = e.pointerId;
 
                 isTouching = true;
-                container.setPointerCapture(e.pointerId);
 
                 lastX = e.clientX;
                 lastY = e.clientY;
@@ -1270,7 +1273,7 @@
             });
 
             container.addEventListener('pointermove', (e) => {
-                if (!isTouching || !isInGameMode || !isMobile) return;
+                if (!isTouching || !isInGameMode || !isMobile || e.pointerId !== cameraPointerId) return;
 
                 touchIndicator.style.left = `${e.clientX}px`;
                 touchIndicator.style.top = `${e.clientY}px`;
@@ -1285,9 +1288,10 @@
                 pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, pitch));
             });
 
-            const stopTouch = () => {
-                if (!isTouching) return;
+            const stopTouch = (e) => {
+                if (!isTouching || (e && e.pointerId !== cameraPointerId)) return;
                 isTouching = false;
+                cameraPointerId = null;
                 touchIndicator.style.display = 'none';
             };
 
@@ -1624,15 +1628,23 @@
             const btnAction = document.getElementById('btn-action-touch');
             const btnJump = document.getElementById('btn-jump');
 
-            btnAction.addEventListener('pointerdown', (e) => {
+            const handleBtnAction = (e) => {
+                e.preventDefault();
                 e.stopPropagation();
                 interactWithObject();
-            });
+            };
 
-            btnJump.addEventListener('pointerdown', (e) => {
+            const handleBtnJump = (e) => {
+                e.preventDefault();
                 e.stopPropagation();
                 doJump();
-            });
+            };
+
+            btnAction.addEventListener('pointerdown', handleBtnAction);
+            btnJump.addEventListener('pointerdown', handleBtnJump);
+
+            btnAction.addEventListener('touchstart', handleBtnAction, { passive: false });
+            btnJump.addEventListener('touchstart', handleBtnJump, { passive: false });
 
             setupTouchEvents();
         }
@@ -1650,18 +1662,24 @@
             let touchId = null;
             let startX = 0, startY = 0;
 
-            joystickZone.addEventListener('touchstart', (e) => {
+            const handleTouchStart = (e) => {
                 e.preventDefault();
+                e.stopPropagation();
+                if (touchId !== null) return;
+
                 const touch = e.changedTouches[0];
                 touchId = touch.identifier;
                 startX = touch.clientX;
                 startY = touch.clientY;
                 joystickActive = true;
-            });
+            };
 
-            window.addEventListener('touchmove', (e) => {
+            const handleTouchMove = (e) => {
+                if (!joystickActive) return;
                 for (let touch of e.changedTouches) {
                     if (touch.identifier === touchId) {
+                        e.preventDefault();
+                        e.stopPropagation();
                         let dx = touch.clientX - startX;
                         let dy = touch.clientY - startY;
                         let maxRadius = 85;
@@ -1674,19 +1692,29 @@
                         knob.style.transform = `translate(${knobX}px, ${knobY}px)`;
                         joystickVector.x = knobX / maxRadius;
                         joystickVector.y = knobY / maxRadius;
+                        break;
                     }
                 }
-            });
-
-            const resetJoystick = () => {
-                touchId = null;
-                joystickActive = false;
-                joystickVector = { x: 0, y: 0 };
-                knob.style.transform = `translate(0px, 0px)`;
             };
 
-            window.addEventListener('touchend', resetJoystick);
-            window.addEventListener('touchcancel', resetJoystick);
+            const handleTouchEnd = (e) => {
+                for (let touch of e.changedTouches) {
+                    if (touch.identifier === touchId) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        touchId = null;
+                        joystickActive = false;
+                        joystickVector = { x: 0, y: 0 };
+                        knob.style.transform = `translate(0px, 0px)`;
+                        break;
+                    }
+                }
+            };
+
+            joystickZone.addEventListener('touchstart', handleTouchStart, { passive: false });
+            window.addEventListener('touchmove', handleTouchMove, { passive: false });
+            window.addEventListener('touchend', handleTouchEnd, { passive: false });
+            window.addEventListener('touchcancel', handleTouchEnd, { passive: false });
         }
 
         function updatePlayerPhysics(delta) {
